@@ -21,15 +21,18 @@ func test_pcm_floats_to_stereo_frames() -> void:
 	assert_vector(frames[1]).is_equal(Vector2(-0.25, -0.25))
 
 
-func test_offline_transport_get_voice_is_empty() -> void:
-	var transport := SteamVoiceTransport.new()
-	assert_bool(transport.available).is_false()
+func test_transport_get_voice_empty_when_unavailable() -> void:
+	var transport := FakeSteamVoiceTransport.new()
+	transport.available = false
+	transport.set_voice(PackedByteArray([1, 2, 3]))
 	assert_int(transport.get_voice().size()).is_equal(0)
 
 
-func test_offline_transport_send_packet_noops() -> void:
-	var transport := SteamVoiceTransport.new()
+func test_transport_send_packet_noops_when_unavailable() -> void:
+	var transport := FakeSteamVoiceTransport.new()
+	transport.available = false
 	transport.send_packet(123, PackedByteArray([1, 2]), 1)
+	assert_int(transport.sent_packets.size()).is_equal(0)
 
 
 func test_fake_transport_records_sent_packets() -> void:

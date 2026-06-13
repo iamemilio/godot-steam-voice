@@ -14,6 +14,8 @@ func set_voice(data: PackedByteArray) -> void:
 
 
 func get_voice() -> PackedByteArray:
+	if not available:
+		return PackedByteArray()
 	var data := _voice_data
 	_voice_data = PackedByteArray()
 	return data
@@ -28,6 +30,8 @@ func stop_recording() -> void:
 
 
 func send_packet(steam_id: int, data: PackedByteArray, p2p_channel: int) -> void:
+	if not available or data.is_empty() or steam_id == 0:
+		return
 	sent_packets.append(
 		{"steam_id": steam_id, "data": data.duplicate(), "p2p_port": p2p_channel}
 	)

@@ -108,7 +108,7 @@ def run_tests() -> int:
             "-a",
             "res://tests",
             "-rd",
-            str(REPORTS_DIR),
+            "reports",
             "-c",
             "--ignoreHeadlessMode",
         ],
