@@ -7,13 +7,18 @@ This repo is a **standalone Godot project**. Copy it into `addons/steam_proximit
 - Godot **4.6+**
 - Python **3.10+** (test runner)
 - [gdtoolkit](https://github.com/Scony/godot-gdscript-toolkit) — `pip install -r requirements.txt`
-- [GdUnit4](https://github.com/godot-gdunit-labs/gdUnit4) — vendored under `addons/gdUnit4/` (dev only; do not ship to games)
+- [GdUnit4](https://github.com/godot-gdunit-labs/gdUnit4) — installed on demand via `make install-dev` (pinned in `tools/gdunit4_version.txt`; not committed to git)
 - [GodotSteam](https://godotsteam.com/) — optional; live demo only
+- **git** — required to install GdUnit4
 
 ## Setup
 
 1. Clone the repository.
-2. Optional: install GodotSteam under `addons/godotsteam/` and add `steam_appid.txt` for live voice.
+2. `pip install -r requirements.txt`
+3. `make install-dev` — clones pinned GdUnit4 into `addons/gdUnit4/` (gitignored; runtime + CLI only, no GdUnit4 test suite)
+4. Optional: install GodotSteam under `addons/godotsteam/` and add `steam_appid.txt` for live voice.
+
+`make test` and CI install GdUnit4 automatically if missing.
 
 Enable the GdUnit4 plugin in Project → Project Settings → Plugins to run tests from the Godot editor.
 
@@ -26,7 +31,8 @@ Enable the GdUnit4 plugin in Project → Project Settings → Plugins to run tes
 | `demo/` | Example scene |
 | `tests/` | GdUnit4 suites |
 | `tests/helpers/` | Test doubles |
-| `addons/gdUnit4/` | GdUnit4 framework (dev only) |
+| `tools/gdunit4_version.txt` | Pinned GdUnit4 release |
+| `tools/install_gdunit4.py` | Installs minimal GdUnit4 to `addons/gdUnit4/` |
 | `tools/run_tests.py` | Python entry point |
 | `docs/` | Docsify documentation (GitHub Pages) |
 

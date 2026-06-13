@@ -2,6 +2,13 @@
 
 ## Running tests locally
 
+First-time setup:
+
+```bash
+pip install -r requirements.txt
+make install-dev    # optional — make test installs GdUnit4 if missing
+```
+
 ```bash
 make check          # gdlint + GdUnit4 headless tests
 make test           # tests only
@@ -51,11 +58,11 @@ GitHub Actions runs:
 | Job | Command |
 |-----|---------|
 | **lint** | `gdlint` on project root (excludes `addons/`) |
-| **test** | `python tools/run_tests.py --tests-only` |
+| **test** | Installs GdUnit4 + `python tools/run_tests.py --tests-only` |
 | **CodeQL** | Static analysis for Python (`tools/run_tests.py`); GDScript is not a CodeQL language |
 
 Failed tests appear as named annotations on the PR. Download the **gdunit4-reports** artifact for the HTML report.
 
 ## GodotSteam editor note
 
-Plain Godot 4.6.3 CI passes all tests. A GodotSteam build may expose the Steam singleton without a running client — one transport test can fail in that environment. That is an environment mismatch, not a product bug.
+Transport offline behavior is tested via `FakeSteamVoiceTransport`, not the live Steam singleton — tests should pass on plain Godot and GodotSteam editors alike.

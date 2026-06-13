@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: help test lint check docs
+.PHONY: help test lint check docs install-dev
 
 ifeq ($(OS),Windows_NT)
 PYTHON ?= python
@@ -16,6 +16,7 @@ help:
 	@echo "  make lint    Run gdlint"
 	@echo "  make check   lint + test"
 	@echo "  make docs    Serve Docsify site locally (port $(DOCS_PORT))"
+	@echo "  make install-dev  Install pinned GdUnit4 (dev/CI dependency)"
 	@echo ""
 	@echo "Override Godot: GODOT_PATH=/path/to/godot make test"
 	@echo "Override port:  DOCS_PORT=8080 make docs"
@@ -28,6 +29,9 @@ lint:
 
 check:
 	$(PYTHON) tools/run_tests.py
+
+install-dev:
+	$(PYTHON) tools/install_gdunit4.py
 
 docs:
 	@echo "Docs: http://127.0.0.1:$(DOCS_PORT)/"

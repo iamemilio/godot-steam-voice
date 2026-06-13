@@ -14,6 +14,15 @@ ADDON_ROOT = Path(__file__).resolve().parent.parent
 TEST_LOG = ADDON_ROOT / ".cache" / "godot-tests.log"
 REPORTS_DIR = ADDON_ROOT / "reports"
 GDUNIT_CMD = "res://addons/gdUnit4/bin/GdUnitCmdTool.gd"
+INSTALL_GDUNIT4 = ADDON_ROOT / "tools" / "install_gdunit4.py"
+
+
+def ensure_gdunit4() -> int:
+    if (ADDON_ROOT / "addons" / "gdUnit4" / "bin" / "GdUnitCmdTool.gd").is_file():
+        return 0
+    print("GdUnit4 not found — running tools/install_gdunit4.py...")
+    proc = subprocess.run([sys.executable, str(INSTALL_GDUNIT4)], cwd=str(ADDON_ROOT))
+    return proc.returncode
 
 
 def _find_godot() -> Path | None:
@@ -66,6 +75,10 @@ def run_lint() -> int:
 
 
 def run_tests() -> int:
+    gdunit_code = ensure_gdunit4()
+    if gdunit_code != 0:
+        return gdunit_code
+
     godot = _find_godot()
     if godot is None:
         print(
