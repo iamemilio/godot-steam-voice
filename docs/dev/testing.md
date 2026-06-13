@@ -50,8 +50,9 @@ GitHub Actions runs:
 
 | Job | Command |
 |-----|---------|
-| **lint** | `gdlint` on project root |
+| **lint** | `gdlint` on project root (excludes `addons/`) |
 | **test** | `python tools/run_tests.py --tests-only` |
+| **CodeQL** | Static analysis for Python (`tools/run_tests.py`); GDScript is not a CodeQL language |
 
 Failed tests appear as named annotations on the PR. Download the **gdunit4-reports** artifact for the HTML report.
 
