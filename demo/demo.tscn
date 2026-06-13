@@ -1,0 +1,48 @@
+[gd_scene load_steps=9 format=3 uid="uid://steamvoice_demo"]
+
+[ext_resource type="Script" path="res://voice_session.gd" id="1_session"]
+[ext_resource type="Script" path="res://voice_channel.gd" id="2_channel"]
+[ext_resource type="Script" path="res://modifiers/spatial_attenuation_modifier.gd" id="3_spatial"]
+[ext_resource type="Script" path="res://modifiers/voice_input_modifier.gd" id="4_input"]
+[ext_resource type="Script" path="res://modifiers/roster_modifier.gd" id="5_roster"]
+[ext_resource type="Script" path="res://modifiers/radio_filter_modifier.gd" id="6_radio"]
+[ext_resource type="Script" path="res://demo/demo.gd" id="7_demo"]
+
+[sub_resource type="Resource" id="SpatialMod"]
+script = ExtResource("3_spatial")
+full_volume_m = 5.0
+silent_m = 30.0
+
+[sub_resource type="Resource" id="RadioInputMod"]
+script = ExtResource("4_input")
+input_mode = 1
+input_action = "radio_push"
+
+[sub_resource type="Resource" id="RosterMod"]
+script = ExtResource("5_roster")
+
+[sub_resource type="Resource" id="RadioFilterMod"]
+script = ExtResource("6_radio")
+
+[node name="SteamVoiceDemo" type="Node3D"]
+script = ExtResource("7_demo")
+
+[node name="VoiceSession" type="Node" parent="."]
+script = ExtResource("1_session")
+
+[node name="Proximity" type="Node" parent="VoiceSession"]
+script = ExtResource("2_channel")
+channel_name = "Proximity"
+modifiers = Array[Resource]([SubResource("SpatialMod")])
+
+[node name="Radio" type="Node" parent="VoiceSession"]
+script = ExtResource("2_channel")
+channel_name = "Radio"
+modifiers = Array[Resource]([SubResource("RadioInputMod"), SubResource("RosterMod"), SubResource("RadioFilterMod")])
+
+[node name="Instructions" type="Label" parent="."]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 720.0
+offset_bottom = 120.0
+text = "Steam Proximity Voice demo. Proximity = open mic + spatial. Radio = push-to-talk (radio_push). Host/join via your game's Steam lobby, then add demo players to this scene."
