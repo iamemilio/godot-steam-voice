@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run steam_proximity_voice unit tests (standalone — no Friend Slop required)."""
+"""Run Godot Steam Voice tests via GdUnit4."""
 
 from __future__ import annotations
 
@@ -12,7 +12,17 @@ from pathlib import Path
 
 ADDON_ROOT = Path(__file__).resolve().parent.parent
 TEST_LOG = ADDON_ROOT / ".cache" / "godot-tests.log"
-TEST_SCRIPT = "res://tests/run_tests.gd"
+REPORTS_DIR = ADDON_ROOT / "reports"
+GDUNIT_CMD = "res://addons/gdUnit4/bin/GdUnitCmdTool.gd"
+INSTALL_GDUNIT4 = ADDON_ROOT / "tools" / "install_gdunit4.py"
+
+
+def ensure_gdunit4() -> int:
+    if (ADDON_ROOT / "addons" / "gdUnit4" / "bin" / "GdUnitCmdTool.gd").is_file():
+        return 0
+    print("GdUnit4 not found — running tools/install_gdunit4.py...")
+    proc = subprocess.run([sys.executable, str(INSTALL_GDUNIT4)], cwd=str(ADDON_ROOT))
+    return proc.returncode
 
 
 def _find_godot() -> Path | None:
@@ -56,7 +66,7 @@ def run_lint() -> int:
     if gdlint is None:
         print("gdlint not found — skip lint or install gdtoolkit", file=sys.stderr)
         return 0
-    print("Running gdlint on steam_proximity_voice...")
+    print("Running gdlint on Godot Steam Voice...")
     proc = subprocess.run(
         [str(gdlint), str(ADDON_ROOT)],
         cwd=str(ADDON_ROOT),
@@ -65,6 +75,10 @@ def run_lint() -> int:
 
 
 def run_tests() -> int:
+    gdunit_code = ensure_gdunit4()
+    if gdunit_code != 0:
+        return gdunit_code
+
     godot = _find_godot()
     if godot is None:
         print(
@@ -74,6 +88,7 @@ def run_tests() -> int:
         return 1
 
     TEST_LOG.parent.mkdir(parents=True, exist_ok=True)
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
     env["STEAM_PROXIMITY_VOICE_TEST"] = "1"
 
@@ -85,6 +100,8 @@ def run_tests() -> int:
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=int(os.environ.get("GODOT_IMPORT_TIMEOUT_SEC", "180")),
     )
     if import_proc.returncode != 0:
@@ -92,30 +109,47 @@ def run_tests() -> int:
         print("Godot import failed.", file=sys.stderr)
         return import_proc.returncode
 
-    print(f"Running Godot tests in {ADDON_ROOT}...")
+    print(f"Running GdUnit4 tests in {ADDON_ROOT}...")
     proc = subprocess.run(
         [
             str(godot),
             "--headless",
             "--path",
             str(ADDON_ROOT),
-            "--script",
-            TEST_SCRIPT,
+            "-s",
+            GDUNIT_CMD,
+            "-a",
+            "res://tests",
+            "-rd",
+            "reports",
+            "-c",
+            "--ignoreHeadlessMode",
         ],
         cwd=str(ADDON_ROOT),
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
-        timeout=int(os.environ.get("GODOT_TEST_TIMEOUT_SEC", "120")),
+        encoding="utf-8",
+        errors="replace",
+        timeout=int(os.environ.get("GODOT_TEST_TIMEOUT_SEC", "180")),
     )
-    TEST_LOG.write_text(proc.stdout, encoding="utf-8")
-    print(proc.stdout)
+    output = proc.stdout or ""
+    TEST_LOG.write_text(output, encoding="utf-8")
+    print(output)
+    if proc.returncode != 0:
+        print("GdUnit4 tests failed.", file=sys.stderr)
+    elif list(REPORTS_DIR.glob("**/results.xml")):
+        print(f"JUnit report: {next(REPORTS_DIR.glob('**/results.xml'))}")
     return proc.returncode
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="steam_proximity_voice test runner")
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    parser = argparse.ArgumentParser(description="Godot Steam Voice test runner")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--lint-only", action="store_true")
     group.add_argument("--tests-only", action="store_true")

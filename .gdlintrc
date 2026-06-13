@@ -1,0 +1,7 @@
+# Lint addon source only — vendored GdUnit4 is excluded.
+excluded_directories: !!set
+  addons: null
+  .git: null
+  .godot: null
+  .cache: null
+  reports: null
