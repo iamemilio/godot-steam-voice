@@ -10,11 +10,11 @@ static func get_steam_id_for_peer(peer: Object, peer_id: int) -> int:
 	return int(peer.call("get_steam_id_for_peer_id", peer_id))
 
 
-static func collect_session_steam_ids(multiplayer_api: MultiplayerAPI) -> Array[int]:
+static func collect_session_steam_ids(multiplayer_api: Object) -> Array[int]:
 	var ids: Array[int] = []
-	if multiplayer_api == null:
+	if multiplayer_api == null or not multiplayer_api.has_method("get_peers"):
 		return ids
-	var peer := multiplayer_api.multiplayer_peer
+	var peer: Object = multiplayer_api.get("multiplayer_peer")
 	if peer == null:
 		return ids
 	for peer_id in multiplayer_api.get_peers():

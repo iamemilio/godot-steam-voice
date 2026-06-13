@@ -45,4 +45,4 @@ offset_left = 16.0
 offset_top = 16.0
 offset_right = 720.0
 offset_bottom = 120.0
-text = "Steam Proximity Voice demo. Proximity = open mic + spatial. Radio = push-to-talk (radio_push). Host/join via your game's Steam lobby, then add demo players to this scene."
+text = "Godot Steam Voice demo. Proximity = open mic + spatial. Radio = push-to-talk (radio_push). Host/join via your game's Steam lobby, then add demo players to this scene."

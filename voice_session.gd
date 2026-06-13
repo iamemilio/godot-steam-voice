@@ -14,7 +14,7 @@ signal pcm_frame_decompressed(samples: PackedFloat32Array, sample_rate: int, cha
 var is_active: bool = false
 var local_steam_id: int = 0
 
-var _transport: SteamVoiceTransport
+var _transport
 var _channels: Array[VoiceChannel] = []
 var _channels_by_wire_id: Dictionary = {}
 var _channels_by_name: Dictionary = {}
@@ -34,7 +34,6 @@ func _ready() -> void:
 func _detect_test_mode() -> bool:
 	return (
 		OS.get_environment("STEAM_PROXIMITY_VOICE_TEST") == "1"
-		or OS.get_environment("FRIEND_SLOP_TEST") == "1"
 	)
 
 
@@ -97,6 +96,29 @@ func get_session_peers() -> Array[int]:
 	return _discover_peers_from_steam()
 
 
+func setup_offline_session_for_tests(local_id: int = 100) -> void:
+	if not _test_mode:
+		return
+	_discover_channels()
+	if _channels.is_empty():
+		return
+	_allocate_channel_ids()
+	local_steam_id = local_id
+	is_active = true
+
+
+func set_transport_for_tests(transport: RefCounted) -> void:
+	if not _test_mode:
+		return
+	_transport = transport
+
+
+func run_frame_for_tests(delta: float = 0.0) -> void:
+	if not _test_mode or not is_active:
+		return
+	_tick_frame(delta)
+
+
 func _discover_channels() -> void:
 	_channels.clear()
 	_channels_by_wire_id.clear()
@@ -124,7 +146,7 @@ func _allocate_channel_ids() -> void:
 func _tick_frame(delta: float) -> void:
 	for channel in _channels:
 		channel.process_modifiers_frame(delta)
-	var compressed := _transport.get_voice()
+	var compressed: PackedByteArray = _transport.get_voice()
 	_send_voice(compressed)
 	_receive_voice()
 	_update_playback()
@@ -160,7 +182,7 @@ func _receive_voice() -> void:
 	for channel in _channels:
 		if channel.p2p_port < 0:
 			continue
-		var packets := _transport.read_packets(channel.p2p_port)
+		var packets: Array[Dictionary] = _transport.read_packets(channel.p2p_port)
 		for packet_data in packets:
 			_process_incoming_packet(channel, packet_data)
 
@@ -173,11 +195,11 @@ func _process_incoming_packet(default_channel: VoiceChannel, packet_data: Dictio
 	if raw.size() < 2:
 		return
 	var wire_id := int(raw[0])
-	var compressed := raw.slice(1)
+	var compressed_payload: PackedByteArray = raw.slice(1)
 	var channel: VoiceChannel = _channels_by_wire_id.get(wire_id, default_channel) as VoiceChannel
 	if channel == null:
 		return
-	var decompressed := _transport.decompress_voice(compressed)
+	var decompressed: Dictionary = _transport.decompress_voice(compressed_payload)
 	if decompressed.is_empty():
 		return
 	var pcm_buffer: PackedByteArray = decompressed.get("buffer", PackedByteArray()) as PackedByteArray

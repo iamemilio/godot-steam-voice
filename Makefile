@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: help test lint check
+.PHONY: help test lint check docs
 
 ifeq ($(OS),Windows_NT)
 PYTHON ?= python
@@ -7,14 +7,18 @@ else
 PYTHON ?= python3
 endif
 
+DOCS_PORT ?= 3000
+
 help:
-	@echo "steam_proximity_voice (standalone addon)"
+	@echo "Godot Steam Voice"
 	@echo ""
-	@echo "  make test    Run headless Godot unit tests"
-	@echo "  make lint    Run gdlint on this addon"
+	@echo "  make test    Run GdUnit4 headless tests"
+	@echo "  make lint    Run gdlint"
 	@echo "  make check   lint + test"
+	@echo "  make docs    Serve Docsify site locally (port $(DOCS_PORT))"
 	@echo ""
 	@echo "Override Godot: GODOT_PATH=/path/to/godot make test"
+	@echo "Override port:  DOCS_PORT=8080 make docs"
 
 test:
 	$(PYTHON) tools/run_tests.py --tests-only
@@ -24,3 +28,8 @@ lint:
 
 check:
 	$(PYTHON) tools/run_tests.py
+
+docs:
+	@echo "Docs: http://127.0.0.1:$(DOCS_PORT)/"
+	@echo "Press Ctrl+C to stop."
+	cd docs && $(PYTHON) -m http.server $(DOCS_PORT)

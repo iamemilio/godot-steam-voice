@@ -11,7 +11,7 @@ env:
   GODOT_VERSION: "4.6.3"
 
 jobs:
-  check:
+  lint:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +22,19 @@ jobs:
           cache: pip
 
       - name: Install gdtoolkit
-        run: pip install gdtoolkit
+        run: pip install -r requirements.txt
+
+      - name: Run gdlint
+        run: python tools/run_tests.py --lint-only
+
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
       - name: Install Godot
         run: |
@@ -32,5 +44,19 @@ jobs:
           unzip -q "Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
           echo "GODOT_PATH=$PWD/Godot_v${GODOT_VERSION}-stable_linux.x86_64" >> "$GITHUB_ENV"
 
-      - name: Lint and test
-        run: python tools/run_tests.py
+      - name: Run GdUnit4 tests
+        run: python tools/run_tests.py --tests-only
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: reports/**/results.xml
+          check_name: GdUnit4 tests
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gdunit4-reports
+          path: reports/

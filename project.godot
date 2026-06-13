@@ -1,12 +1,16 @@
-; Minimal Godot project for standalone development and testing.
-; Copy this folder to its own repo, add GodotSteam, then: python tools/run_tests.py
+; Godot Steam Voice — standalone dev and test project.
+; Copy to addons/steam_proximity_voice/ in a host game, add GodotSteam for live voice, then: python tools/run_tests.py
 
 config_version=5
 
 [application]
 
-config/name="Steam Proximity Voice"
+config/name="Godot Steam Voice"
 config/features=PackedStringArray("4.6", "Forward Plus")
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg")
 
 [audio]
 
