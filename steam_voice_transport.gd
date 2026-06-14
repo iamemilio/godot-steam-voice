@@ -97,7 +97,5 @@ static func pcm_floats_to_stereo_frames(samples: PackedFloat32Array) -> Array[Ve
 func _p2p_send_unreliable_no_delay() -> int:
 	if _steam.get("P2P_SEND_UNRELIABLE_NO_DELAY") != null:
 		return int(_steam.get("P2P_SEND_UNRELIABLE_NO_DELAY"))
-	if _steam.has_method("get"):
-		pass
-	# GodotSteam 4.x enum fallback
+	# GodotSteam 4.x P2P_SEND_UNRELIABLE_NO_DELAY fallback
 	return 2

@@ -1,7 +1,8 @@
-class_name VoiceModifier
+class_name VoiceRule
 extends Resource
 
-## Base class for stackable voice channel effects. Subclass and add to VoiceChannel.modifiers.
+## Base class for stackable voice channel rules.
+## Subclass and add to VoiceChannel.rules (CUSTOM preset).
 
 @export var enabled: bool = true
 
@@ -23,6 +24,10 @@ func should_send(_ctx: VoiceSendContext) -> bool:
 
 
 func filter_recipients(_ctx: VoiceSendContext) -> void:
+	pass
+
+
+func apply_transmit_flags(_ctx: VoiceSendContext) -> void:
 	pass
 
 

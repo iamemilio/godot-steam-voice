@@ -1,23 +1,23 @@
-# GdUnit4 suite: spatial audio distance math and playback wiring.
+# GdUnit4 suite: proximity volume math and playback wiring.
 extends GdUnitTestSuite
 
 
 func test_full_gain_inside_radius() -> void:
-	var gain := SpatialAttenuation.distance_gain(
+	var gain := ProximityVolumeMath.distance_gain(
 		Vector3.ZERO, Vector3(2.0, 0.0, 0.0), 3.0, 25.0, -40.0
 	)
 	assert_float(gain).is_equal_approx(1.0, 0.001)
 
 
 func test_silent_beyond_radius() -> void:
-	var gain := SpatialAttenuation.distance_gain(
+	var gain := ProximityVolumeMath.distance_gain(
 		Vector3.ZERO, Vector3(30.0, 0.0, 0.0), 3.0, 25.0, -40.0
 	)
 	assert_float(gain).is_less(0.02)
 
 
 func test_mid_range_partial_gain() -> void:
-	var gain := SpatialAttenuation.distance_gain(
+	var gain := ProximityVolumeMath.distance_gain(
 		Vector3.ZERO, Vector3(14.0, 0.0, 0.0), 3.0, 25.0, -40.0
 	)
 	assert_float(gain).is_less(1.0)
@@ -25,17 +25,17 @@ func test_mid_range_partial_gain() -> void:
 
 
 func test_distance_gain_db_matches_linear_gain() -> void:
-	var gain := SpatialAttenuation.distance_gain(
+	var gain := ProximityVolumeMath.distance_gain(
 		Vector3.ZERO, Vector3(14.0, 0.0, 0.0), 3.0, 25.0, -40.0
 	)
-	var gain_db := SpatialAttenuation.distance_gain_db(
+	var gain_db := ProximityVolumeMath.distance_gain_db(
 		Vector3.ZERO, Vector3(14.0, 0.0, 0.0), 3.0, 25.0, -40.0
 	)
 	assert_float(gain_db).is_equal_approx(linear_to_db(maxf(gain, 0.00001)), 0.01)
 
 
-func test_spatial_modifier_sets_use_spatial_player() -> void:
-	var spatial := SpatialAttenuationModifier.new()
+func test_proximity_volume_full_gain_within_full_volume_radius() -> void:
+	var spatial := ProximityVolume.new()
 	var ctx := VoicePlaybackContext.new()
 	ctx.listener_position = Vector3.ZERO
 	ctx.speaker_position = Vector3(2.0, 0.0, 0.0)
@@ -56,10 +56,10 @@ func test_speaker_handle_disables_engine_attenuation() -> void:
 
 
 func test_gain_stack_multiplies() -> void:
-	var spatial := SpatialAttenuationModifier.new()
+	var spatial := ProximityVolume.new()
 	spatial.full_volume_m = 3.0
 	spatial.silent_m = 25.0
-	var gain_mod := GainModifier.new()
+	var gain_mod := VolumeBoost.new()
 	gain_mod.gain_db = -6.0
 	var ctx := VoicePlaybackContext.new()
 	ctx.listener_position = Vector3.ZERO
@@ -75,15 +75,16 @@ func test_spatial_playback_with_registered_speakers() -> void:
 	var session := VoiceSession.new()
 	auto_free(session)
 	var channel := VoiceChannel.new()
-	var spatial := SpatialAttenuationModifier.new()
+	channel.preset = VoiceChannel.Preset.CUSTOM
+	var spatial := ProximityVolume.new()
 	spatial.full_volume_m = 3.0
 	spatial.silent_m = 25.0
-	channel.modifiers = [spatial]
+	channel.rules = [spatial]
 	session.add_child(channel)
 	add_child(session)
 	await await_idle_frame()
 
-	session.setup_offline_session_for_tests()
+	VoiceSessionTestSupport.activate_offline(session)
 	var listener := Node3D.new()
 	var speaker := Node3D.new()
 	auto_free(listener)

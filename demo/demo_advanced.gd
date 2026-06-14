@@ -1,6 +1,6 @@
 extends Node3D
 
-## Beginner demo: one voice channel with proximity and optional walkie on the same stream.
+## Advanced demo: separate comms channels (requires allow_separate_comms).
 
 @onready var session: VoiceSession = $VoiceSession
 
@@ -13,10 +13,6 @@ func _ready() -> void:
 
 func _start_voice() -> void:
 	session.start()
-
-
-func register_demo_player(_player: CharacterBody3D) -> void:
-	pass
 
 
 func _exit_tree() -> void:

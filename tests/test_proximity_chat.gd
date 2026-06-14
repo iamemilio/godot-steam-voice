@@ -1,4 +1,4 @@
-# GdUnit4 suite: proximity channel (open mic + spatial + room occlusion).
+# GdUnit4 suite: proximity channel presets and wall muffling.
 extends GdUnitTestSuite
 
 
@@ -15,8 +15,10 @@ func _make_wall_grid() -> Array:
 	return grid
 
 
-func test_open_mic_allows_send_without_input_modifier() -> void:
+func test_open_mic_allows_send_without_mic_rule() -> void:
 	var channel: VoiceChannel = auto_free(VoiceChannel.new())
+	channel.preset = VoiceChannel.Preset.GLOBAL
+	channel.notify_registered()
 	var ctx := VoiceSendContext.new()
 	ctx.compressed_voice = PackedByteArray([1, 2, 3])
 	ctx.local_steam_id = 100
@@ -24,20 +26,21 @@ func test_open_mic_allows_send_without_input_modifier() -> void:
 	assert_bool(channel.evaluate_send(ctx)).is_true()
 
 
-func test_proximity_spatial_and_occlusion_reduce_volume_through_walls() -> void:
+func test_proximity_and_wall_muffling_reduce_volume_through_walls() -> void:
 	OS.set_environment("STEAM_PROXIMITY_VOICE_TEST", "1")
 	var session := VoiceSession.new()
 	auto_free(session)
 	var channel := VoiceChannel.new()
-	var spatial := SpatialAttenuationModifier.new()
+	channel.preset = VoiceChannel.Preset.CUSTOM
+	var spatial := ProximityVolume.new()
 	spatial.full_volume_m = 3.0
 	spatial.silent_m = 25.0
-	var occlusion := RoomOcclusionModifier.new()
-	channel.modifiers = [spatial, occlusion]
+	var muffling := WallMuffling.new()
+	channel.rules = [spatial, muffling]
 	session.add_child(channel)
 
 	var grid := _make_wall_grid()
-	session.room_graph = RoomGraph.from_wall_grid(
+	session.muffling_map = MufflingMap.from_wall_grid(
 		grid,
 		func(pos: Vector3) -> Vector2i:
 			if pos.x < 0.5:
@@ -46,7 +49,7 @@ func test_proximity_spatial_and_occlusion_reduce_volume_through_walls() -> void:
 	)
 	add_child(session)
 	await await_idle_frame()
-	session.setup_offline_session_for_tests()
+	VoiceSessionTestSupport.activate_offline(session)
 
 	var listener := Node3D.new()
 	var speaker := Node3D.new()
@@ -65,7 +68,7 @@ func test_proximity_spatial_and_occlusion_reduce_volume_through_walls() -> void:
 
 	listener.position = Vector3(0.0, 0.0, 0.0)
 	speaker.position = Vector3(1.0, 0.0, 0.0)
-	session.room_graph = RoomGraph.from_wall_grid(
+	session.muffling_map = MufflingMap.from_wall_grid(
 		grid,
 		func(_pos: Vector3) -> Vector2i:
 			return Vector2i(1, 1)
@@ -81,14 +84,15 @@ func test_speaker_position_updates_change_gain() -> void:
 	var session := VoiceSession.new()
 	auto_free(session)
 	var channel := VoiceChannel.new()
-	var spatial := SpatialAttenuationModifier.new()
+	channel.preset = VoiceChannel.Preset.CUSTOM
+	var spatial := ProximityVolume.new()
 	spatial.full_volume_m = 3.0
 	spatial.silent_m = 25.0
-	channel.modifiers = [spatial]
+	channel.rules = [spatial]
 	session.add_child(channel)
 	add_child(session)
 	await await_idle_frame()
-	session.setup_offline_session_for_tests()
+	VoiceSessionTestSupport.activate_offline(session)
 
 	var listener := Node3D.new()
 	var speaker := Node3D.new()

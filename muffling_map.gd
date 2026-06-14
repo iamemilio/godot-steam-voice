@@ -1,19 +1,20 @@
-class_name RoomGraph
+class_name MufflingMap
 extends Resource
 
-## Grid-based room connectivity for voice occlusion. Built once per maze/level.
+## Grid-based room connectivity for voice wall muffling. Built once per level.
+
 
 var _wall_grid: Array = []
 var _room_by_cell: Dictionary = {}
 var _world_to_cell: Callable
 
 
-static func from_wall_grid(wall_grid: Array, world_to_cell: Callable) -> Resource:
-	var graph: Resource = load("res://room_graph.gd").new()
-	graph._wall_grid = wall_grid
-	graph._world_to_cell = world_to_cell
-	graph._build_rooms()
-	return graph
+static func from_wall_grid(wall_grid: Array, world_to_cell: Callable) -> MufflingMap:
+	var map := MufflingMap.new()
+	map._wall_grid = wall_grid
+	map._world_to_cell = world_to_cell
+	map._build_rooms()
+	return map
 
 
 func get_occlusion_db(

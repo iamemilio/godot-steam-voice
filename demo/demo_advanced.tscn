@@ -1,0 +1,50 @@
+[gd_scene load_steps=12 format=3 uid="uid://steamvoice_demo_advanced"]
+
+[ext_resource type="Script" path="res://voice_session.gd" id="1_session"]
+[ext_resource type="Script" path="res://voice_channel.gd" id="2_channel"]
+[ext_resource type="Script" path="res://rules/proximity_volume.gd" id="3_proximity"]
+[ext_resource type="Script" path="res://rules/mic_mode.gd" id="4_mic"]
+[ext_resource type="Script" path="res://rules/channel_members.gd" id="5_members"]
+[ext_resource type="Script" path="res://rules/voice_effects_bus.gd" id="6_bus"]
+[ext_resource type="Script" path="res://demo/demo_advanced.gd" id="7_demo"]
+
+[sub_resource type="Resource" id="ProximityRule"]
+script = ExtResource("3_proximity")
+full_volume_m = 5.0
+silent_m = 30.0
+
+[sub_resource type="Resource" id="OpenMicRule"]
+script = ExtResource("4_mic")
+
+[sub_resource type="Resource" id="WalkieMicRule"]
+script = ExtResource("4_mic")
+input_mode = 1
+open_mic_enabled = false
+input_action = "radio_push"
+
+[sub_resource type="Resource" id="MembersRule"]
+script = ExtResource("5_members")
+
+[sub_resource type="Resource" id="BusRule"]
+script = ExtResource("6_bus")
+bus_name = "VoiceRadio"
+walkie_only = true
+
+[node name="SteamVoiceDemoAdvanced" type="Node3D"]
+script = ExtResource("7_demo")
+
+[node name="VoiceSession" type="Node" parent="."]
+script = ExtResource("1_session")
+allow_separate_comms = true
+
+[node name="Proximity" type="Node" parent="VoiceSession"]
+script = ExtResource("2_channel")
+channel_name = "Proximity"
+preset = 2
+rules = Array[Resource]([SubResource("ProximityRule"), SubResource("OpenMicRule")])
+
+[node name="Radio" type="Node" parent="VoiceSession"]
+script = ExtResource("2_channel")
+channel_name = "Radio"
+preset = 2
+rules = Array[Resource]([SubResource("WalkieMicRule"), SubResource("MembersRule"), SubResource("BusRule")])

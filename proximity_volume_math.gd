@@ -1,4 +1,4 @@
-class_name SpatialAttenuation
+class_name ProximityVolumeMath
 extends RefCounted
 
 ## Pure distance-attenuation math (linear meters → gain multiplier).

@@ -1,4 +1,4 @@
-# GdUnit4 suite: room graph occlusion for proximity muffling.
+# GdUnit4 suite: muffling map wall layout.
 extends GdUnitTestSuite
 
 
@@ -22,19 +22,19 @@ func _cell_for(x: int, y: int) -> Callable:
 
 func test_same_room_no_occlusion() -> void:
 	var grid := _make_grid()
-	var graph = RoomGraph.from_wall_grid(grid, _cell_for(1, 1))
-	var db: float = graph.get_occlusion_db(Vector3.ZERO, Vector3.ONE, -18.0, -6.0)
+	var map := MufflingMap.from_wall_grid(grid, _cell_for(1, 1))
+	var db: float = map.get_occlusion_db(Vector3.ZERO, Vector3.ONE, -18.0, -6.0)
 	assert_float(db).is_equal_approx(0.0, 0.001)
 
 
 func test_separated_by_wall() -> void:
 	var grid := _make_grid()
-	var graph = RoomGraph.new()
-	graph._wall_grid = grid
-	graph._world_to_cell = func(pos: Vector3) -> Vector2i:
+	var map := MufflingMap.new()
+	map._wall_grid = grid
+	map._world_to_cell = func(pos: Vector3) -> Vector2i:
 		if pos.x < 0.5:
 			return Vector2i(1, 1)
 		return Vector2i(3, 1)
-	graph._build_rooms()
-	var db: float = graph.get_occlusion_db(Vector3(-1, 0, 0), Vector3(1, 0, 0), -18.0, -6.0)
+	map._build_rooms()
+	var db: float = map.get_occlusion_db(Vector3(-1, 0, 0), Vector3(1, 0, 0), -18.0, -6.0)
 	assert_float(db).is_less(-1.0)

@@ -40,6 +40,12 @@ def _find_godot() -> Path | None:
                 if candidate.exists():
                     return candidate
 
+    local_path = ADDON_ROOT / "tools" / "godot_path.local.txt"
+    if local_path.is_file():
+        candidate = Path(local_path.read_text(encoding="utf-8").strip().strip('"'))
+        if candidate.exists():
+            return candidate
+
     which_godot = shutil.which("godot")
     if which_godot:
         return Path(which_godot)

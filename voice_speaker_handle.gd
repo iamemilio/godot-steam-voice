@@ -60,11 +60,7 @@ func flush_to_playback() -> void:
 	if available <= 0 or pending_samples.is_empty():
 		return
 	var to_push := mini(available, pending_samples.size())
-	var frames: Array[Vector2] = []
-	frames.resize(to_push)
-	for i in to_push:
-		var s := pending_samples[i]
-		frames[i] = Vector2(s, s)
+	var frames := SteamVoiceTransport.pcm_floats_to_stereo_frames(pending_samples.slice(0, to_push))
 	gen.push_buffer(frames)
 	if to_push >= pending_samples.size():
 		pending_samples = PackedFloat32Array()

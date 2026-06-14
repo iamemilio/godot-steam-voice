@@ -16,7 +16,8 @@ This repo is a **standalone Godot project**. Copy it into `addons/steam_proximit
 1. Clone the repository.
 2. `pip install -r requirements.txt`
 3. `make install-dev` — clones pinned GdUnit4 into `addons/gdUnit4/` (gitignored; runtime + CLI only, no GdUnit4 test suite)
-4. Optional: install GodotSteam under `addons/godotsteam/` and add `steam_appid.txt` for live voice.
+4. Optional: copy `tools/godot_path.local.example` → `tools/godot_path.local.txt` with your Godot executable path (gitignored).
+5. Optional: install GodotSteam under `addons/godotsteam/` and add `steam_appid.txt` for live voice.
 
 `make test` and CI install GdUnit4 automatically if missing.
 
@@ -26,8 +27,9 @@ Enable the GdUnit4 plugin in Project → Project Settings → Plugins to run tes
 
 | Path | Purpose |
 |------|---------|
-| `voice_session.gd`, `voice_channel.gd` | Core session and channel nodes |
-| `modifiers/` | Composable `VoiceModifier` resources |
+| `voice_session.gd`, `voice_channel.gd`, `voice_member.gd` | Core nodes |
+| `rules/` | Composable `VoiceRule` resources |
+| `voice_packet.gd`, `muffling_map.gd` | Transport envelope and wall map |
 | `demo/` | Example scene |
 | `tests/` | GdUnit4 suites |
 | `tests/helpers/` | Test doubles |
@@ -37,6 +39,24 @@ Enable the GdUnit4 plugin in Project → Project Settings → Plugins to run tes
 | `docs/` | Docsify documentation (GitHub Pages) |
 
 When copying into a game, ship core scripts + `demo/` only unless you want tests in the host project.
+
+## Packaging for distribution
+
+This repo is a **dev project** (tests, docs, CI, GdUnit4). Games should not copy the whole repo.
+
+```bash
+make package
+```
+
+Writes **`dist/godot-steam-voice/`** and **`dist/godot-steam-voice.zip`** — addon scripts, `rules/`, `adapters/`, and `INSTALL.txt` only. No `tests/`, `tools/`, `docs/`, `demo/`, or `project.godot`.
+
+Install in a game:
+
+```
+your_game/addons/godot-steam-voice/
+```
+
+Or run `python tools/package_addon.py --out /path/to/addons/godot-steam-voice`.
 
 ## Documentation site
 
@@ -50,7 +70,7 @@ Published via GitHub Pages: branch `main`, folder `/docs`.
 
 ## Code style
 
-- Match existing naming and modifier patterns.
+- Match existing naming and rule patterns.
 - Keep game-specific integration in the host project, not in this addon.
 - Run `make lint` before opening a PR.
 

@@ -5,6 +5,7 @@ extends RefCounted
 
 var available: bool = true
 var sent_packets: Array[Dictionary] = []
+var decompress_count: int = 0
 var _voice_data: PackedByteArray = PackedByteArray()
 var _incoming_by_port: Dictionary = {}
 
@@ -55,6 +56,7 @@ func read_packets(p2p_channel: int, _max_packet_size: int = 8192) -> Array[Dicti
 
 
 func decompress_voice(compressed: PackedByteArray) -> Dictionary:
+	decompress_count += 1
 	if compressed.is_empty():
 		return {}
 	var buffer := PackedByteArray()
