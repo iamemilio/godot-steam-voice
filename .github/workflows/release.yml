@@ -22,13 +22,11 @@ jobs:
       - name: Build addon package
         run: |
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            version="${GITHUB_REF_NAME#v}"
-            zip_path="dist/godot-steam-voice-${version}.zip"
+            make release "VERSION=${GITHUB_REF_NAME#v}"
           else
-            zip_path="dist/godot-steam-voice.zip"
+            make release
           fi
-          echo "ZIP_PATH=${zip_path}" >> "$GITHUB_ENV"
-          python tools/package_addon.py --zip "${zip_path}"
+          echo "ZIP_PATH=$(make -s print-release-zip)" >> "$GITHUB_ENV"
 
       - name: Verify package contents
         run: |
