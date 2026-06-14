@@ -13,18 +13,21 @@ Voice chat for Godot 4 + [GodotSteam](https://godotsteam.com/) — proximity, wa
 ## Quick start
 
 ```
-VoiceSession
-└── VoiceChannel          preset = Proximity
-Player
-├── Head
-└── VoiceMember
+Main
+├── VoiceSession
+│   └── VoiceChannel          preset = Proximity
+└── Player
+    ├── Head
+    └── VoiceMember           head_path = ../Head
 ```
 
 ```gdscript
-session.start()
+session.start()  # when peers and Steam IDs are ready
 ```
 
 One channel, one send, one decompress per packet — proximity and walkie are local playback rules, not separate network paths.
+
+Install: copy `addons/godot-steam-voice/` from a [release](https://github.com/iamemilio/godot-steam-voice/releases) or run `make release`.
 
 Read the **[docs](https://iamemilio.github.io/godot-steam-voice/)** for presets, recipes, and Advanced custom rules.
 
