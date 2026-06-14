@@ -22,14 +22,14 @@ jobs:
       - name: Build addon package
         run: |
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            make release "VERSION=${GITHUB_REF_NAME#v}"
-          else
-            make release
+            export VERSION="${GITHUB_REF_NAME#v}"
           fi
+          make release
           echo "ZIP_PATH=$(make -s print-release-zip)" >> "$GITHUB_ENV"
 
       - name: Verify package contents
         run: |
+          test -f "$ZIP_PATH"
           test -f dist/godot-steam-voice/INSTALL.txt
           test -f dist/godot-steam-voice/voice_session.gd
           test -d dist/godot-steam-voice/rules
@@ -53,3 +53,4 @@ jobs:
         with:
           files: ${{ env.ZIP_PATH }}
           generate_release_notes: true
+          fail_on_unmatched_files: true
