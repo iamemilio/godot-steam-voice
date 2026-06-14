@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: help test lint check docs install-dev
+.PHONY: help test lint check docs install-dev package
 
 ifeq ($(OS),Windows_NT)
 PYTHON ?= python
@@ -17,6 +17,7 @@ help:
 	@echo "  make check   lint + test"
 	@echo "  make docs    Serve Docsify site locally (port $(DOCS_PORT))"
 	@echo "  make install-dev  Install pinned GdUnit4 (dev/CI dependency)"
+	@echo "  make package Build dist/godot-steam-voice/ (addon files only)"
 	@echo ""
 	@echo "Override Godot: GODOT_PATH=/path/to/godot make test"
 	@echo "Override port:  DOCS_PORT=8080 make docs"
@@ -32,6 +33,9 @@ check:
 
 install-dev:
 	$(PYTHON) tools/install_gdunit4.py
+
+package:
+	$(PYTHON) tools/package_addon.py --zip dist/godot-steam-voice.zip
 
 docs:
 	@echo "Docs: http://127.0.0.1:$(DOCS_PORT)/"

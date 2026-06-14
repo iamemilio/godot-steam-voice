@@ -1,10 +1,8 @@
 # Godot Steam Voice
 
-Voice chat for Godot 4 + [GodotSteam](https://godotsteam.com/) multiplayer — proximity chat, push-to-talk channels, spatial audio, and composable modifiers without hand-rolling capture, P2P routing, and per-player playback.
+Voice chat for Godot 4 + [GodotSteam](https://godotsteam.com/) — proximity, walkie-talkie effects, and wall muffling on **one voice stream** with client-owned playback rules.
 
 **[Documentation](https://iamemilio.github.io/godot-steam-voice/)** · [Demo](demo/demo.tscn) · [Contributing](CONTRIBUTING.md)
-
-GodotSteam gives you the raw voice APIs; this addon turns them into scene-tree nodes you wire once per match: a `VoiceSession`, `VoiceChannel` children for each comms mode, optional `VoiceModifier` resources, and head-node registration when players spawn.
 
 ## Requirements
 
@@ -16,17 +14,19 @@ GodotSteam gives you the raw voice APIs; this addon turns them into scene-tree n
 
 ```
 VoiceSession
-└── VoiceChannel  (channel_name="Proximity")
-      modifiers = [SpatialAttenuationModifier]
+└── VoiceChannel          preset = Proximity
+Player
+├── Head
+└── VoiceMember
 ```
 
 ```gdscript
-session.begin_session()
-proximity.register_listener(local_player.get_node("Head"))
-proximity.register_speaker(steam_id, player.get_node("Head"))
+session.start()
 ```
 
-Read the **[docs](https://iamemilio.github.io/godot-steam-voice/)** for the full picture (why, how it fits your match flow, modifiers, demo).
+One channel, one send, one decompress per packet — proximity and walkie are local playback rules, not separate network paths.
+
+Read the **[docs](https://iamemilio.github.io/godot-steam-voice/)** for presets, recipes, and Advanced custom rules.
 
 ## License
 

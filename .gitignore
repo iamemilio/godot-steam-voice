@@ -1,4 +1,7 @@
+dist/*
+!dist/.gdignore
 .cache/
+tools/godot_path.local.txt
 .godot/
 reports/
 addons/gdUnit4/

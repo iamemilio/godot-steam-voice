@@ -37,11 +37,12 @@ GdUnit4 writes HTML and JUnit reports under `reports/` (gitignored). Open `repor
 
 | File | Coverage |
 |------|----------|
-| `test_multiplayer_voice.gd` | Channels, send/receive pipeline |
-| `test_proximity_chat.gd` | Open mic, spatial + room occlusion |
-| `test_spatial_audio.gd` | Distance gain math and playback |
+| `test_multiplayer_voice.gd` | Single-lane transport, send/receive pipeline |
+| `test_proximity_chat.gd` | Proximity preset, wall muffling |
+| `test_spatial_audio.gd` | ProximityVolume math and playback |
 | `test_steam_integration.gd` | Transport, PCM, peer adapter |
-| `test_room_graph.gd` | Wall occlusion |
+| `test_room_graph.gd` | `MufflingMap` wall layout |
+| `test_voice_patterns.gd` | Presets, transmit flags, VoiceMember, single-lane guard |
 | `test_demo_scene.gd` | Demo scene smoke tests |
 
 ## Adding tests
