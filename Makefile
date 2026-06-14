@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: help test lint check docs install-dev package release print-release-zip
+.PHONY: help test lint check docs install-dev release print-release-zip
 
 ifeq ($(OS),Windows_NT)
 PYTHON ?= python
@@ -25,7 +25,6 @@ help:
 	@echo "  make docs    Serve Docsify site locally (port $(DOCS_PORT))"
 	@echo "  make install-dev  Install pinned GdUnit4 (dev/CI dependency)"
 	@echo "  make release Build dist/godot-steam-voice/ and zip (see VERSION below)"
-	@echo "  make package Alias for make release"
 	@echo ""
 	@echo "Release zip: default dist/godot-steam-voice.zip"
 	@echo "             VERSION=1.0.0 -> dist/godot-steam-voice-1.0.0.zip"
@@ -47,8 +46,6 @@ install-dev:
 
 release:
 	$(PYTHON) tools/package_addon.py --zip $(RELEASE_ZIP)
-
-package: release
 
 print-release-zip:
 	@echo $(RELEASE_ZIP)

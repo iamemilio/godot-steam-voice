@@ -57,8 +57,7 @@ make release VERSION=1.0.0
 # -> dist/godot-steam-voice-1.0.0.zip
 ```
 
-`make package` is an alias for `make release`.
- — addon scripts, `rules/`, `adapters/`, and `INSTALL.txt` only. No `tests/`, `tools/`, `docs/`, `demo/`, or `project.godot`.
+Output is addon scripts, `rules/`, `adapters/`, and `INSTALL.txt` only. No `tests/`, `tools/`, `docs/`, `demo/`, or `project.godot`.
 
 Install in a game:
 
