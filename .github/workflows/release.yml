@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build addon package
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#v}"
+            zip_path="dist/godot-steam-voice-${version}.zip"
+          else
+            zip_path="dist/godot-steam-voice.zip"
+          fi
+          echo "ZIP_PATH=${zip_path}" >> "$GITHUB_ENV"
+          python tools/package_addon.py --zip "${zip_path}"
+
+      - name: Verify package contents
+        run: |
+          test -f dist/godot-steam-voice/INSTALL.txt
+          test -f dist/godot-steam-voice/voice_session.gd
+          test -d dist/godot-steam-voice/rules
+          ! test -d dist/godot-steam-voice/tests
+          ! test -d dist/godot-steam-voice/docs
+          echo "Packaged files:"
+          find dist/godot-steam-voice -type f | sort
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-steam-voice-addon
+          path: |
+            ${{ env.ZIP_PATH }}
+            dist/godot-steam-voice/
+          retention-days: 90
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ZIP_PATH }}
+          generate_release_notes: true

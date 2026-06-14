@@ -58,6 +58,8 @@ your_game/addons/godot-steam-voice/
 
 Or run `python tools/package_addon.py --out /path/to/addons/godot-steam-voice`.
 
+**CI releases:** push a version tag (`v1.0.0`) or run the **Release** workflow manually. Artifacts are `godot-steam-voice-<version>.zip` (addon folder ready for `your_game/addons/godot-steam-voice/`).
+
 ## Documentation site
 
 User-facing docs live in `docs/` (Docsify). Preview locally:
