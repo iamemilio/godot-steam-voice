@@ -69,7 +69,7 @@ static func _load_mono_pcm_from_file(file_path: String) -> Dictionary:
 		var chunk_size := file.get_32()
 		match chunk_id:
 			"fmt ":
-				var _audio_format := file.get_16()
+				file.get_16()
 				channels = file.get_16()
 				sample_rate = file.get_32()
 				file.get_32()

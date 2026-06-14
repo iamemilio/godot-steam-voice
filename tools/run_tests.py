@@ -76,7 +76,17 @@ def run_lint() -> int:
     proc = subprocess.run(
         [str(gdlint), str(ADDON_ROOT)],
         cwd=str(ADDON_ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
     )
+    output = proc.stdout or ""
+    if output.strip():
+        print(output, end="" if output.endswith("\n") else "\n")
+    if proc.returncode != 0:
+        print(f"gdlint failed with exit code {proc.returncode}.", file=sys.stderr)
     return proc.returncode
 
 

@@ -5,6 +5,16 @@ extends Control
 const FIXTURE_DIR := "res://tests/fixtures/audio/"
 const RECORD_BUS := "AudioFixtureRecord"
 
+var _mic_player: AudioStreamPlayer
+var _playback_player: AudioStreamPlayer
+var _record_effect: AudioEffectRecord
+var _record_bus_idx: int = -1
+var _pending_recording: AudioStreamWAV
+var _recording := false
+var _device_names: PackedStringArray = PackedStringArray()
+var _saved_filenames: Array[String] = []
+var _meter_display: float = 0.0
+
 @onready var _mic_list: ItemList = %MicList
 @onready var _mic_level: ProgressBar = %MicLevel
 @onready var _refresh_button: Button = %RefreshButton
@@ -17,16 +27,6 @@ const RECORD_BUS := "AudioFixtureRecord"
 @onready var _file_list: ItemList = %FileList
 @onready var _play_button: Button = %PlayButton
 @onready var _stop_button: Button = %StopButton
-
-var _mic_player: AudioStreamPlayer
-var _playback_player: AudioStreamPlayer
-var _record_effect: AudioEffectRecord
-var _record_bus_idx: int = -1
-var _pending_recording: AudioStreamWAV
-var _recording := false
-var _device_names: PackedStringArray = PackedStringArray()
-var _saved_filenames: Array[String] = []
-var _meter_display: float = 0.0
 
 
 func _ready() -> void:
@@ -171,7 +171,8 @@ func _stop_recording() -> void:
 		return
 	_save_panel.visible = true
 	_filename_edit.grab_focus()
-	var suggested := "sample_%s" % Time.get_datetime_string_from_system().replace(":", "-").replace("T", "_")
+	var stamp := Time.get_datetime_string_from_system().replace(":", "-").replace("T", "_")
+	var suggested := "sample_%s" % stamp
 	_filename_edit.text = suggested
 	_update_playback_buttons()
 	_set_status("Recording ready (%.1fs). Preview, then Save." % _pending_recording.get_length())
@@ -302,7 +303,9 @@ func _sanitize_filename(raw: String) -> String:
 	var out := ""
 	for i in raw.length():
 		var ch := raw[i]
-		if (ch >= "a" and ch <= "z") or (ch >= "A" and ch <= "Z") or (ch >= "0" and ch <= "9") or ch in ["-", "_"]:
+		var allowed := (ch >= "a" and ch <= "z") or (ch >= "A" and ch <= "Z")
+		allowed = allowed or (ch >= "0" and ch <= "9") or ch in ["-", "_"]
+		if allowed:
 			out += ch
 		elif ch == " ":
 			out += "_"
