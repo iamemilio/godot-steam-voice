@@ -1,6 +1,6 @@
 # Contributing
 
-This repo is a **standalone Godot project**. Copy it into `addons/steam_proximity_voice/` in a host game, or develop it directly here.
+This repo is a **standalone Godot project** for developing and testing the addon. Ship games using the packaged addon under `addons/godot-steam-voice/` (see [Packaging for distribution](#packaging-for-distribution)), not by copying this whole repo.
 
 ## Prerequisites
 
@@ -45,10 +45,19 @@ When copying into a game, ship core scripts + `demo/` only unless you want tests
 This repo is a **dev project** (tests, docs, CI, GdUnit4). Games should not copy the whole repo.
 
 ```bash
-make package
+make release
 ```
 
-Writes **`dist/godot-steam-voice/`** and **`dist/godot-steam-voice.zip`** — addon scripts, `rules/`, `adapters/`, and `INSTALL.txt` only. No `tests/`, `tools/`, `docs/`, `demo/`, or `project.godot`.
+Writes **`dist/godot-steam-voice/`** and a zip under **`dist/`**
+
+Default zip: **`dist/godot-steam-voice.zip`**. For release-style naming (same as CI on tags):
+
+```bash
+make release VERSION=1.0.0
+# -> dist/godot-steam-voice-1.0.0.zip
+```
+
+Output is addon scripts, `rules/`, `adapters/`, and `INSTALL.txt` only. No `tests/`, `tools/`, `docs/`, `demo/`, or `project.godot`.
 
 Install in a game:
 
@@ -56,7 +65,9 @@ Install in a game:
 your_game/addons/godot-steam-voice/
 ```
 
-Or run `python tools/package_addon.py --out /path/to/addons/godot-steam-voice`.
+Or run `python tools/package_addon.py --out /path/to/addons/godot-steam-voice` (used internally by `make release`).
+
+**CI releases:** push a version tag (`v1.0.0`) or run the **Release** workflow manually. Both use `make release` (with `VERSION` from the tag when applicable). Artifacts are `godot-steam-voice-<version>.zip` (addon folder ready for `your_game/addons/godot-steam-voice/`).
 
 ## Documentation site
 
