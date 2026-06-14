@@ -1,0 +1,13 @@
+{
+  "fixtures": [
+    {
+      "file": "audio/test_audio_sample_01.wav",
+      "description": "Recorded WAV golden fixture for playback pipeline tests",
+      "sample_rate": 48000,
+      "channels": 2,
+      "golden_mono_md5_first_4800": "c5112783bd83d762f9cb9e4fdb4869eb",
+      "min_duration_sec": 10.0,
+      "energy_check_start_sample": 240000
+    }
+  ]
+}

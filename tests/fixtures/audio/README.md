@@ -16,3 +16,5 @@ make audio-recording
 All files are written to this folder (`tests/fixtures/audio/`). Do not save recordings elsewhere — tests and docs assume this path.
 
 Use lowercase names with letters, numbers, dashes, or underscores (for example `proximity_room_tone.wav`).
+
+Committed WAV files are listed in [../manifest.json](../manifest.json) and replayed by `tests/test_audio_fixtures.gd`.

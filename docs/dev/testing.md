@@ -41,6 +41,7 @@ GdUnit4 writes HTML and JUnit reports under `reports/` (gitignored). Open `repor
 | `test_proximity_chat.gd` | Proximity preset, wall muffling |
 | `test_spatial_audio.gd` | ProximityVolume math and playback wiring |
 | `test_voice_playback.gd` | VoiceSpeakerHandle PCM buffer and AudioStreamGenerator flush |
+| `test_audio_fixtures.gd` | Golden WAV fixture load, hash, fake transport replay, receive pipeline |
 | `test_steam_integration.gd` | Transport, PCM, peer adapter |
 | `test_room_graph.gd` | `MufflingMap` wall layout |
 | `test_voice_patterns.gd` | Presets, transmit flags, VoiceMember, single-lane guard |
