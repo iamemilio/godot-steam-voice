@@ -46,6 +46,18 @@ GdUnit4 writes HTML and JUnit reports under `reports/` (gitignored). Open `repor
 | `test_voice_patterns.gd` | Presets, transmit flags, VoiceMember, single-lane guard |
 | `test_demo_scene.gd` | Demo scene smoke tests |
 
+## Audio test fixtures
+
+Record WAV files into `tests/fixtures/audio/` with:
+
+```bash
+make audio-recording
+```
+
+This opens a standalone recorder window (not the editor, not headless). The tool lives under `tools/` and is **not** included in `make release` packages.
+
+See [tests/fixtures/audio/README.md](../../tests/fixtures/audio/README.md).
+
 ## Adding tests
 
 1. Add or extend a file under `tests/` that **extends `GdUnitTestSuite`**.

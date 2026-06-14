@@ -1,5 +1,10 @@
-; Godot Steam Voice — standalone dev and test project.
-; Copy to addons/steam_proximity_voice/ in a host game, add GodotSteam for live voice, then: python tools/run_tests.py
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
@@ -8,13 +13,13 @@ config_version=5
 config/name="Godot Steam Voice"
 config/features=PackedStringArray("4.6", "Forward Plus")
 
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg")
-
 [audio]
 
 driver/enable_input=true
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg")
 
 [input]
 
