@@ -8,6 +8,7 @@ var sent_packets: Array[Dictionary] = []
 var decompress_count: int = 0
 var _voice_data: PackedByteArray = PackedByteArray()
 var _incoming_by_port: Dictionary = {}
+var _decompress_result: Dictionary = {}
 
 
 func set_voice(data: PackedByteArray) -> void:
@@ -55,10 +56,16 @@ func read_packets(p2p_channel: int, _max_packet_size: int = 8192) -> Array[Dicti
 	return packets
 
 
+func set_decompress_result(buffer: PackedByteArray, sample_rate: int) -> void:
+	_decompress_result = {"buffer": buffer, "sample_rate": sample_rate}
+
+
 func decompress_voice(compressed: PackedByteArray) -> Dictionary:
 	decompress_count += 1
 	if compressed.is_empty():
 		return {}
+	if not _decompress_result.is_empty():
+		return _decompress_result.duplicate()
 	var buffer := PackedByteArray()
 	buffer.resize(4)
 	buffer.encode_s16(0, 16384)

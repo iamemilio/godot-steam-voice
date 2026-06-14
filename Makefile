@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: help test lint check docs install-dev release print-release-zip
+.PHONY: help test lint check docs install-dev release print-release-zip audio-recording
 
 ifeq ($(OS),Windows_NT)
 PYTHON ?= python
@@ -24,6 +24,7 @@ help:
 	@echo "  make check   lint + test"
 	@echo "  make docs    Serve Docsify site locally (port $(DOCS_PORT))"
 	@echo "  make install-dev  Install pinned GdUnit4 (dev/CI dependency)"
+	@echo "  make audio-recording  Launch standalone window to record WAV fixtures (dev-only)"
 	@echo "  make release Build dist/godot-steam-voice/ and zip (see VERSION below)"
 	@echo ""
 	@echo "Release zip: default dist/godot-steam-voice.zip"
@@ -43,6 +44,9 @@ check:
 
 install-dev:
 	$(PYTHON) tools/install_gdunit4.py
+
+audio-recording:
+	$(PYTHON) tools/launch_audio_recording.py
 
 release:
 	$(PYTHON) tools/package_addon.py --zip $(RELEASE_ZIP)

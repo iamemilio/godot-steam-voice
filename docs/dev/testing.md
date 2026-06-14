@@ -41,10 +41,23 @@ GdUnit4 writes HTML and JUnit reports under `reports/` (gitignored). Open `repor
 | `test_proximity_chat.gd` | Proximity preset, wall muffling |
 | `test_spatial_audio.gd` | ProximityVolume math and playback wiring |
 | `test_voice_playback.gd` | VoiceSpeakerHandle PCM buffer and AudioStreamGenerator flush |
+| `test_audio_fixtures.gd` | Golden WAV fixture load, hash, fake transport replay, receive pipeline |
 | `test_steam_integration.gd` | Transport, PCM, peer adapter |
 | `test_room_graph.gd` | `MufflingMap` wall layout |
 | `test_voice_patterns.gd` | Presets, transmit flags, VoiceMember, single-lane guard |
 | `test_demo_scene.gd` | Demo scene smoke tests |
+
+## Audio test fixtures
+
+Record WAV files into `tests/fixtures/audio/` with:
+
+```bash
+make audio-recording
+```
+
+This opens a standalone recorder window (not the editor, not headless). The tool lives under `tools/` and is **not** included in `make release` packages.
+
+See [tests/fixtures/audio/README.md](../../tests/fixtures/audio/README.md).
 
 ## Adding tests
 
