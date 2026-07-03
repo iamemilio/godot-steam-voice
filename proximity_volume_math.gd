@@ -4,6 +4,14 @@ extends RefCounted
 ## Pure distance-attenuation math (linear meters → gain multiplier).
 
 
+static func is_audible_distance(
+	speaker_position: Vector3,
+	listener_position: Vector3,
+	silent_m: float
+) -> bool:
+	return speaker_position.distance_to(listener_position) < silent_m
+
+
 static func distance_gain(
 	listener_position: Vector3,
 	speaker_position: Vector3,

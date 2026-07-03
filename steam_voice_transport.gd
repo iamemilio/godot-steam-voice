@@ -4,7 +4,6 @@ extends RefCounted
 ## Isolates GodotSteam voice + P2P calls. No-ops when Steam is unavailable (CI / editor).
 
 const DEFAULT_SAMPLE_RATE := 24000
-const DECOMPRESS_ESTIMATE := 8192
 
 var available: bool = false
 var _steam: Object
@@ -43,13 +42,34 @@ func get_voice() -> PackedByteArray:
 func decompress_voice(compressed: PackedByteArray) -> Dictionary:
 	if not available or compressed.is_empty():
 		return {}
-	var result: Variant = _steam.call("decompressVoice", compressed, DECOMPRESS_ESTIMATE)
-	if result is Dictionary:
-		var data: Dictionary = result
-		var buffer: PackedByteArray = data.get("buffer", PackedByteArray()) as PackedByteArray
-		if not buffer.is_empty():
-			return data
-	return {}
+	var sample_rate := DEFAULT_SAMPLE_RATE
+	if _steam.has_method("getVoiceOptimalSampleRate"):
+		sample_rate = int(_steam.call("getVoiceOptimalSampleRate"))
+	var result: Variant = _steam.call("decompressVoice", compressed, sample_rate, 20480)
+	if not result is Dictionary:
+		return {}
+	var data: Dictionary = result
+	var pcm_size := int(data.get("size", 0))
+	if pcm_size <= 0:
+		return {}
+	if int(data.get("result", -1)) != _voice_result_ok():
+		return {}
+	var pcm: PackedByteArray = data.get("uncompressed", PackedByteArray()) as PackedByteArray
+	if pcm.is_empty():
+		pcm = data.get("buffer", PackedByteArray()) as PackedByteArray
+	if pcm.is_empty():
+		return {}
+	return {"buffer": pcm.slice(0, pcm_size), "sample_rate": sample_rate}
+
+
+func _voice_result_ok() -> int:
+	if _steam.get("VoiceResult") != null:
+		var voice_result = _steam.get("VoiceResult")
+		if voice_result is Dictionary and voice_result.has("VOICE_RESULT_OK"):
+			return int(voice_result["VOICE_RESULT_OK"])
+	if _steam.get("VOICE_RESULT_OK") != null:
+		return int(_steam.get("VOICE_RESULT_OK"))
+	return 0
 
 
 func send_packet(steam_id: int, data: PackedByteArray, p2p_channel: int) -> void:

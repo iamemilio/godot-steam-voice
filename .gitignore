@@ -5,3 +5,5 @@ tools/godot_path.local.txt
 .godot/
 reports/
 addons/gdUnit4/
+steam_appid.txt
+.cursor/

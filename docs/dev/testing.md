@@ -80,4 +80,4 @@ Failed tests appear as named annotations on the PR. Download the **gdunit4-repor
 
 ## GodotSteam editor note
 
-Transport offline behavior is tested via `FakeSteamVoiceTransport`, not the live Steam singleton — tests should pass on plain Godot and GodotSteam editors alike.
+Transport offline behavior is tested via `FakeSteamVoiceTransport`, not the live Steam singleton — tests should pass on plain Godot and GodotSteam editors alike. **No second Steam account or multiplayer session is required for CI or local `make test`.** Optional live voice testing uses your own Steam client (GodotSteam loopback or a game session you already have).

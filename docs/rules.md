@@ -4,7 +4,7 @@ Advanced composable building blocks. Beginners use **presets** on `VoiceChannel`
 
 | Rule | Contract |
 |------|----------|
-| `ProximityVolume` | Playback volume depends on distance between players |
+| `ProximityVolume` | Send: drops peers beyond `silent_m`; playback: distance falloff |
 | `WallMuffling` | Playback quieter through walls/doors |
 | `MicMode` | Controls when the mic transmits; sets walkie flag on envelope |
 | `ChannelMembers` | Restricts who can talk and listen |
