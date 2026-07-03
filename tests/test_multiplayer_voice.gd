@@ -159,6 +159,44 @@ func test_decompress_cache_dedupes_identical_payload_same_frame() -> void:
 	assert_int(transport.decompress_count).is_equal(1)
 
 
+func test_proximity_preset_culls_far_peers_on_send() -> void:
+	OS.set_environment("STEAM_PROXIMITY_VOICE_TEST", "1")
+	var transport := FakeSteamVoiceTransport.new()
+	var session := VoiceSession.new()
+	auto_free(session)
+	var channel := VoiceChannel.new()
+	channel.preset = VoiceChannel.Preset.PROXIMITY
+	channel.near_full_volume_m = 5.0
+	channel.far_silent_m = 25.0
+	session.add_child(channel)
+	add_child(session)
+	await await_idle_frame()
+	VoiceSessionTestSupport.set_transport(session, transport)
+	VoiceSessionTestSupport.activate_offline(session, 100)
+	session.set_session_peers([200, 300])
+
+	var listener := Node3D.new()
+	var near_peer := Node3D.new()
+	var far_peer := Node3D.new()
+	auto_free(listener)
+	auto_free(near_peer)
+	auto_free(far_peer)
+	add_child(listener)
+	add_child(near_peer)
+	add_child(far_peer)
+	listener.position = Vector3.ZERO
+	near_peer.position = Vector3(10.0, 0.0, 0.0)
+	far_peer.position = Vector3(100.0, 0.0, 0.0)
+	channel.register_listener(listener)
+	channel.register_speaker(200, near_peer)
+	channel.register_speaker(300, far_peer)
+
+	transport.set_voice(PackedByteArray([4, 5]))
+	VoiceSessionTestSupport.run_frame(session)
+	assert_int(transport.sent_packets.size()).is_equal(1)
+	assert_int(transport.sent_packets[0]["steam_id"]).is_equal(200)
+
+
 func test_proximity_walkie_preset_single_send() -> void:
 	OS.set_environment("STEAM_PROXIMITY_VOICE_TEST", "1")
 	var transport := FakeSteamVoiceTransport.new()

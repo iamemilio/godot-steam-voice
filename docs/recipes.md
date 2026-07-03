@@ -20,7 +20,7 @@ Assumes addon at `addons/godot-steam-voice/`, one `VoiceSession`, and `VoiceMemb
 - Enable **Walkie**: `use_walkie`, `push_to_talk_action`, `effects_bus_name`
 - Create `VoiceRadio` bus in Project → Audio with EQ
 
-Open-mic proximity and walkie PTT share **one** network send. Receivers apply distance gain on every packet; the effects bus applies only when the sender held walkie PTT (`FLAG_WALKIE_ACTIVE`).
+Open-mic proximity and walkie PTT share **one** network send. The sender culls peers beyond `far_silent_m`; receivers still apply smooth distance falloff on every packet. The effects bus applies only when the sender held walkie PTT (`FLAG_WALKIE_ACTIVE`).
 
 ## Wall muffling
 

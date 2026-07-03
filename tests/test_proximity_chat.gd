@@ -113,3 +113,69 @@ func test_speaker_position_updates_change_gain() -> void:
 	var near_db := channel.get_speaker_handle(7).player.volume_db
 
 	assert_float(near_db).is_greater(far_db)
+
+
+func test_proximity_filters_far_recipients_on_send() -> void:
+	var channel: VoiceChannel = auto_free(VoiceChannel.new())
+	channel.preset = VoiceChannel.Preset.CUSTOM
+	var spatial := ProximityVolume.new()
+	spatial.full_volume_m = 3.0
+	spatial.silent_m = 25.0
+	var mic := MicMode.new()
+	mic.open_mic_enabled = true
+	channel.rules = [spatial, mic]
+
+	var listener := Node3D.new()
+	var near_peer := Node3D.new()
+	var far_peer := Node3D.new()
+	auto_free(listener)
+	auto_free(near_peer)
+	auto_free(far_peer)
+	add_child(listener)
+	add_child(near_peer)
+	add_child(far_peer)
+	listener.position = Vector3.ZERO
+	near_peer.position = Vector3(10.0, 0.0, 0.0)
+	far_peer.position = Vector3(100.0, 0.0, 0.0)
+
+	channel.register_listener(listener)
+	channel.register_speaker(200, near_peer)
+	channel.register_speaker(300, far_peer)
+
+	var ctx := VoiceSendContext.new()
+	ctx.channel = channel
+	ctx.compressed_voice = PackedByteArray([1, 2, 3])
+	ctx.local_steam_id = 100
+	ctx.recipients = [200, 300]
+	assert_bool(channel.evaluate_send(ctx)).is_true()
+	assert_bool(ctx.recipients.has(200)).is_true()
+	assert_bool(ctx.recipients.has(300)).is_false()
+
+
+func test_proximity_send_skips_when_all_peers_out_of_range() -> void:
+	var channel: VoiceChannel = auto_free(VoiceChannel.new())
+	channel.preset = VoiceChannel.Preset.CUSTOM
+	var spatial := ProximityVolume.new()
+	spatial.silent_m = 25.0
+	var mic := MicMode.new()
+	mic.open_mic_enabled = true
+	channel.rules = [spatial, mic]
+
+	var listener := Node3D.new()
+	var far_peer := Node3D.new()
+	auto_free(listener)
+	auto_free(far_peer)
+	add_child(listener)
+	add_child(far_peer)
+	listener.position = Vector3.ZERO
+	far_peer.position = Vector3(100.0, 0.0, 0.0)
+
+	channel.register_listener(listener)
+	channel.register_speaker(200, far_peer)
+
+	var ctx := VoiceSendContext.new()
+	ctx.channel = channel
+	ctx.compressed_voice = PackedByteArray([1, 2, 3])
+	ctx.local_steam_id = 100
+	ctx.recipients = [200]
+	assert_bool(channel.evaluate_send(ctx)).is_false()
