@@ -32,10 +32,12 @@ Enable the GdUnit4 plugin in Project → Project Settings → Plugins to run tes
 | `voice_packet.gd`, `muffling_map.gd` | Transport envelope and wall map |
 | `demo/` | Example scene |
 | `tests/` | GdUnit4 suites |
+| `tests/fixtures/audio/` | Golden WAV fixtures (`make audio-recording`) |
 | `tests/helpers/` | Test doubles |
 | `tools/gdunit4_version.txt` | Pinned GdUnit4 release |
 | `tools/install_gdunit4.py` | Installs minimal GdUnit4 to `addons/gdUnit4/` |
 | `tools/run_tests.py` | Python entry point |
+| `tools/audio_recording/` | Dev-only WAV fixture recorder (not in release zip) |
 | `docs/` | Docsify documentation (GitHub Pages) |
 
 When copying into a game, ship core scripts + `demo/` only unless you want tests in the host project.
