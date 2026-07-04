@@ -61,3 +61,21 @@ func test_adapter_collects_session_steam_ids() -> void:
 	assert_int(ids.size()).is_equal(2)
 	assert_bool(ids.has(1000)).is_true()
 	assert_bool(ids.has(2000)).is_true()
+
+
+func test_parse_sender_steam_id_remote_key() -> void:
+	var packet := {
+		"data": PackedByteArray([1, 2, 3]),
+		"steam_id_remote": 7654321,
+	}
+	assert_int(SteamVoiceTransport.parse_sender_steam_id(packet)).is_equal(7654321)
+
+
+func test_normalize_p2p_packet() -> void:
+	var payload := PackedByteArray([9, 8, 7])
+	var normalized := SteamVoiceTransport.normalize_p2p_packet({
+		"data": payload,
+		"steam_id_remote": 42,
+	})
+	assert_int(int(normalized.get("steam_id", 0))).is_equal(42)
+	assert_object(normalized.get("data")).is_equal(payload)

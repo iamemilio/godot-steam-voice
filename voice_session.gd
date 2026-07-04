@@ -117,13 +117,25 @@ func get_primary_channel() -> VoiceChannel:
 
 
 func set_session_peers(steam_ids: Array[int]) -> void:
-	_session_peers = steam_ids.duplicate()
+	_session_peers = _filter_valid_steam_ids(steam_ids)
+
+
+func refresh_member_bindings() -> void:
+	if not is_active:
+		return
+	for member in _members.keys():
+		var voice_member := member as VoiceMember
+		var data: Dictionary = _members[member]
+		var steam_id := _resolved_member_steam_id(voice_member, data)
+		_apply_member_binding(
+			steam_id,
+			data.get("head") as Node3D,
+			bool(data.get("is_local", false))
+		)
 
 
 func get_session_peers() -> Array[int]:
-	if not _session_peers.is_empty():
-		return _session_peers.duplicate()
-	return _discover_peers_from_steam()
+	return _merge_steam_ids(_session_peers, _discover_peers_from_steam())
 
 
 func bind_member(member_steam_id: int, head: Node3D, is_local: bool, member: VoiceMember) -> void:
@@ -151,12 +163,42 @@ func unbind_member(member: VoiceMember) -> void:
 
 func _register_pending_members() -> void:
 	for member in _members.keys():
+		var voice_member := member as VoiceMember
 		var data: Dictionary = _members[member]
 		_apply_member_binding(
-			int(data.get("steam_id", 0)),
+			_resolved_member_steam_id(voice_member, data),
 			data.get("head") as Node3D,
 			bool(data.get("is_local", false))
 		)
+
+
+func _resolved_member_steam_id(member: VoiceMember, data: Dictionary) -> int:
+	var stored := int(data.get("steam_id", 0))
+	if stored != 0:
+		return stored
+	if member == null:
+		return 0
+	var resolved := member.resolve_steam_id()
+	if resolved != 0:
+		data["steam_id"] = resolved
+	return resolved
+
+
+func _merge_steam_ids(primary: Array[int], secondary: Array[int]) -> Array[int]:
+	var merged: Array[int] = []
+	var seen: Dictionary = {}
+	for source in [primary, secondary]:
+		for steam_id in source:
+			var id := int(steam_id)
+			if id == 0 or seen.has(id):
+				continue
+			seen[id] = true
+			merged.append(id)
+	return merged
+
+
+func _filter_valid_steam_ids(steam_ids: Array[int]) -> Array[int]:
+	return _merge_steam_ids(steam_ids, [])
 
 
 func _apply_member_binding(member_steam_id: int, head: Node3D, is_local: bool) -> void:
@@ -253,7 +295,7 @@ func _receive_voice() -> void:
 
 func _process_incoming_packet(packet_data: Dictionary) -> void:
 	var raw: PackedByteArray = packet_data.get("data", PackedByteArray()) as PackedByteArray
-	var sender_steam_id := int(packet_data.get("steam_id", 0))
+	var sender_steam_id := SteamVoiceTransport.parse_sender_steam_id(packet_data)
 	if raw.is_empty() or sender_steam_id == 0:
 		return
 	var parsed := VoicePacket.parse(raw)
