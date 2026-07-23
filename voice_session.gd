@@ -7,10 +7,12 @@ signal session_started()
 signal session_ended()
 signal channel_registered(channel: VoiceChannel)
 signal pcm_frame_decompressed(samples: PackedFloat32Array, sample_rate: int, channel_name: String)
+signal voice_debug(event: String, detail: String)
 
 @export var enabled: bool = true
 @export var auto_start: bool = false
 @export var allow_separate_comms: bool = false
+@export var debug_logging: bool = false
 @export var muffling_map: MufflingMap
 
 var is_active: bool = false
@@ -26,6 +28,7 @@ var _members: Dictionary = {}
 var _decompress_cache: Dictionary = {}
 var _separate_comms_warned: bool = false
 var _test_mode: bool = false
+var _unbound_speaker_warned: Dictionary = {}
 
 
 func _ready() -> void:
@@ -90,8 +93,7 @@ func stop() -> void:
 		_transport.stop_recording()
 	for channel in _channels:
 		channel.notify_unregistered()
-	for member in _members.keys():
-		unbind_member(member as VoiceMember)
+	# Keep _members so start() can re-bind heads; only tear down channel wiring.
 	is_active = false
 	set_process(false)
 	_channels.clear()
@@ -99,6 +101,7 @@ func stop() -> void:
 	_channels_by_name.clear()
 	_next_wire_id = 1
 	_decompress_cache.clear()
+	_unbound_speaker_warned.clear()
 	session_ended.emit()
 
 
@@ -123,15 +126,26 @@ func set_session_peers(steam_ids: Array[int]) -> void:
 func refresh_member_bindings() -> void:
 	if not is_active:
 		return
+	var channel := get_primary_channel()
+	if channel != null:
+		# Drop stale listener/speaker maps before rebinding (authority / Steam ID can change).
+		channel.clear_speakers()
+		channel.register_listener(null)
 	for member in _members.keys():
 		var voice_member := member as VoiceMember
+		if voice_member == null:
+			continue
 		var data: Dictionary = _members[member]
-		var steam_id := _resolved_member_steam_id(voice_member, data)
-		_apply_member_binding(
-			steam_id,
-			data.get("head") as Node3D,
-			bool(data.get("is_local", false))
-		)
+		# Re-resolve every refresh — peer→Steam maps and authority can arrive late.
+		var steam_id := voice_member.resolve_steam_id()
+		var is_local := voice_member.is_local_member()
+		data["steam_id"] = steam_id
+		data["is_local"] = is_local
+		var head := data.get("head") as Node3D
+		if head == null or not is_instance_valid(head):
+			head = voice_member.get_head_node()
+			data["head"] = head
+		_apply_member_binding(steam_id, head, is_local)
 
 
 func get_session_peers() -> Array[int]:
@@ -162,26 +176,31 @@ func unbind_member(member: VoiceMember) -> void:
 
 
 func _register_pending_members() -> void:
+	# Same path as refresh — never trust sticky steam_id / is_local from first bind.
+	refresh_member_bindings()
+
+
+func find_head_for_steam_id(steam_id: int) -> Node3D:
+	if steam_id == 0:
+		return null
 	for member in _members.keys():
 		var voice_member := member as VoiceMember
+		if voice_member == null:
+			continue
 		var data: Dictionary = _members[member]
-		_apply_member_binding(
-			_resolved_member_steam_id(voice_member, data),
-			data.get("head") as Node3D,
-			bool(data.get("is_local", false))
-		)
-
-
-func _resolved_member_steam_id(member: VoiceMember, data: Dictionary) -> int:
-	var stored := int(data.get("steam_id", 0))
-	if stored != 0:
-		return stored
-	if member == null:
-		return 0
-	var resolved := member.resolve_steam_id()
-	if resolved != 0:
-		data["steam_id"] = resolved
-	return resolved
+		var member_id := int(data.get("steam_id", 0))
+		if member_id == 0:
+			member_id = voice_member.resolve_steam_id()
+			data["steam_id"] = member_id
+		if member_id != steam_id:
+			continue
+		if bool(data.get("is_local", false)):
+			continue
+		var head := data.get("head") as Node3D
+		if head != null and is_instance_valid(head):
+			return head
+		return voice_member.get_head_node()
+	return null
 
 
 func _merge_steam_ids(primary: Array[int], secondary: Array[int]) -> Array[int]:
@@ -257,6 +276,9 @@ func _send_voice(compressed: PackedByteArray) -> void:
 	if compressed.is_empty():
 		return
 	var peers := get_session_peers()
+	if peers.is_empty():
+		_emit_debug("empty_peers", "getVoice had data but session peer list is empty")
+		return
 	var base_ctx := VoiceSendContext.new()
 	base_ctx.session = self
 	base_ctx.compressed_voice = compressed
@@ -280,11 +302,17 @@ func _send_for_channel(channel: VoiceChannel, base_ctx: VoiceSendContext) -> voi
 	if not channel.evaluate_send(ctx):
 		return
 	var packet := VoicePacket.build(channel.wire_id, ctx.transmit_flags, ctx.compressed_voice)
+	var sent_to: Array[int] = []
 	for recipient in ctx.recipients:
 		var steam_id := int(recipient)
 		if steam_id == local_steam_id:
 			continue
 		_transport.send_packet(steam_id, packet, VoicePacket.VOICE_P2P_PORT)
+		sent_to.append(steam_id)
+	if sent_to.is_empty():
+		_emit_debug("send_no_targets", "recipients after local filter were empty")
+		return
+	_emit_debug("send_frame", "bytes=%d to=%s" % [packet.size(), sent_to])
 
 
 func _receive_voice() -> void:
@@ -332,14 +360,34 @@ func _process_incoming_packet(packet_data: Dictionary) -> void:
 
 	channel.set_speaker_transmit_flags(sender_steam_id, flags)
 	pcm_frame_decompressed.emit(samples, sample_rate, channel.channel_name)
+	# Late peer→Steam maps: bind speaker from member heads before creating playback.
+	if channel.get_speaker_node(sender_steam_id) == null:
+		var head := find_head_for_steam_id(sender_steam_id)
+		if head != null:
+			channel.register_speaker(sender_steam_id, head)
+			_emit_debug("speaker_late_bind", "steam_id=%s" % sender_steam_id)
+		else:
+			if not _unbound_speaker_warned.has(sender_steam_id):
+				_unbound_speaker_warned[sender_steam_id] = true
+				_emit_debug(
+					"recv_unbound_speaker",
+					"steam_id=%s samples=%d" % [sender_steam_id, samples.size()]
+				)
 	var handle := channel.get_or_create_handle(sender_steam_id)
 	handle.push_pcm(samples, sample_rate)
+	_emit_debug("recv_packet", "from=%s samples=%d rate=%d" % [sender_steam_id, samples.size(), sample_rate])
 
 
 func _update_playback() -> void:
 	for channel in _channels:
 		if channel.enabled:
 			channel.update_playback()
+
+
+func _emit_debug(event: String, detail: String) -> void:
+	if not debug_logging:
+		return
+	voice_debug.emit(event, detail)
 
 
 func _resolve_local_steam_id() -> int:
