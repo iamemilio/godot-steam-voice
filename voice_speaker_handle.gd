@@ -35,6 +35,20 @@ func setup(parent: Node3D, remote_steam_id: int, attach_node: Node3D) -> void:
 		player.play()
 
 
+func reattach(attach_node: Node3D) -> void:
+	if attach_node == null or not is_instance_valid(attach_node):
+		return
+	speaker_node = attach_node
+	_parent_node = attach_node
+	if player == null or not is_instance_valid(player):
+		return
+	if player.get_parent() != attach_node:
+		player.reparent(attach_node)
+	player.position = Vector3.ZERO
+	if not player.playing:
+		player.play()
+
+
 func push_pcm(samples: PackedFloat32Array, new_sample_rate: int) -> void:
 	if samples.is_empty():
 		return

@@ -19,11 +19,16 @@ func start_recording() -> void:
 	if not available:
 		return
 	_steam.call("startVoiceRecording")
+	# Suppress Steam overlay voice so in-game P2P voice is the active path.
+	if _steam.has_method("setInGameVoiceSpeaking") and _steam.has_method("getSteamID"):
+		_steam.call("setInGameVoiceSpeaking", int(_steam.call("getSteamID")), true)
 
 
 func stop_recording() -> void:
 	if not available:
 		return
+	if _steam.has_method("setInGameVoiceSpeaking") and _steam.has_method("getSteamID"):
+		_steam.call("setInGameVoiceSpeaking", int(_steam.call("getSteamID")), false)
 	_steam.call("stopVoiceRecording")
 
 

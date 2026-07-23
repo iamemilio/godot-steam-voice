@@ -230,13 +230,18 @@ func evaluate_playback(ctx: VoicePlaybackContext, handle: VoiceSpeakerHandle) ->
 
 func get_or_create_handle(steam_id: int) -> VoiceSpeakerHandle:
 	if _speaker_handles.has(steam_id):
-		return _speaker_handles[steam_id] as VoiceSpeakerHandle
+		var existing := _speaker_handles[steam_id] as VoiceSpeakerHandle
+		# If speaker head registered after first packet, move playback onto it.
+		var attach := get_speaker_node(steam_id)
+		if attach != null and is_instance_valid(attach) and existing.speaker_node != attach:
+			existing.reattach(attach)
+		return existing
 	var handle := VoiceSpeakerHandle.new()
-	var attach := get_speaker_node(steam_id)
-	var parent: Node3D = attach if attach != null else _listener_node
+	var attach_node := get_speaker_node(steam_id)
+	var parent: Node3D = attach_node if attach_node != null else _listener_node
 	if parent == null:
 		return handle
-	handle.setup(parent, steam_id, attach)
+	handle.setup(parent, steam_id, attach_node)
 	_speaker_handles[steam_id] = handle
 	return handle
 
@@ -251,8 +256,14 @@ func update_playback() -> void:
 	var listener_pos := _listener_node.global_position
 	for steam_id in _speaker_handles.keys():
 		var handle := _speaker_handles[steam_id] as VoiceSpeakerHandle
+		if handle == null:
+			continue
 		var speaker_node := get_speaker_node(steam_id)
 		if speaker_node == null or not is_instance_valid(speaker_node):
+			speaker_node = handle.speaker_node
+		# Still flush PCM when the head isn't bound yet (packet arrived first).
+		if speaker_node == null or not is_instance_valid(speaker_node):
+			handle.flush_to_playback()
 			continue
 		var ctx := VoicePlaybackContext.new()
 		ctx.channel = self
