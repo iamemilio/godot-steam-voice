@@ -375,7 +375,10 @@ func _process_incoming_packet(packet_data: Dictionary) -> void:
 				)
 	var handle := channel.get_or_create_handle(sender_steam_id)
 	handle.push_pcm(samples, sample_rate)
-	_emit_debug("recv_packet", "from=%s samples=%d rate=%d" % [sender_steam_id, samples.size(), sample_rate])
+	_emit_debug(
+		"recv_packet",
+		"from=%s samples=%d rate=%d" % [sender_steam_id, samples.size(), sample_rate]
+	)
 
 
 func _update_playback() -> void:
