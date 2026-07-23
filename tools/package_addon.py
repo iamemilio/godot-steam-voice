@@ -21,6 +21,8 @@ ADDON_FILES = [
     "voice_send_context.gd",
     "voice_playback_context.gd",
     "voice_speaker_handle.gd",
+    "voice_context_config.gd",
+    "voice_runtime.gd",
     "steam_voice_transport.gd",
     "muffling_map.gd",
     "proximity_volume_math.gd",

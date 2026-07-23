@@ -2,6 +2,15 @@
 
 Demo scenes live in this dev repo at `demo/`. They are **not** included in the packaged addon zip.
 
+## VoiceRuntime demo — [`demo/demo_runtime.tscn`](../demo/demo_runtime.tscn)
+
+Two Inspector-configured `VoiceRuntime` nodes:
+
+- **LobbyRuntime** — `EPHEMERAL_CLUSTER`, huge `far_silent_m`
+- **GameRuntime** — `MEMBERS`, 8m / 40m proximity
+
+Keys: `1` lobby, `2` game, `0` stop, `L` cycle log level.
+
 ## Beginner demo — [`demo/demo.tscn`](../demo/demo.tscn)
 
 One `VoiceSession` → one `VoiceChannel` with **Proximity** preset:
@@ -26,7 +35,7 @@ Two channels with `allow_separate_comms = true`:
 - **Proximity** — CUSTOM rules: `ProximityVolume` + open `MicMode`
 - **Radio** — CUSTOM rules: PTT `MicMode`, `ChannelMembers`, `VoiceEffectsBus`
 
-For comparison only; prefer **one** Proximity channel with `use_walkie` for walkie + proximity.
+For comparison only; prefer **one** Proximity channel with `use_walkie` for walkie + proximity, or `VoiceRuntime` for lobby/match switching.
 
 ## Input actions
 

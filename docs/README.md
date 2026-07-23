@@ -31,45 +31,38 @@ Get it from [GitHub Releases](https://github.com/iamemilio/godot-steam-voice/rel
 
 You also need [GodotSteam](https://godotsteam.com/) with the voice API enabled in your project.
 
-### 2. Scene layout
+### 2. Scene layout (VoiceRuntime)
 
-Add **one** `VoiceSession` with **one** `VoiceChannel` child. On each player scene, add `VoiceMember` pointing at a **Node3D head** that moves with the player.
-
-Players do **not** go under `VoiceSession`.
+Add **`VoiceRuntime`** nodes and tune `VoiceContextConfig` in the Inspector. Call `start()` / `stop()` from code. Sibling runtimes share one `VoiceSession`.
 
 ```
 Main
-├── VoiceSession
-│   └── VoiceChannel          preset = Proximity
-└── Player                    (your existing player scene)
+├── LobbyRuntime              VoiceRuntime (EPHEMERAL_CLUSTER)
+├── GameRuntime               VoiceRuntime (MEMBERS)
+└── Player
     ├── Head                  Node3D — voice position
     └── VoiceMember           head_path = ../Head (default)
 ```
 
-Set the channel preset and walkie/wall options in the Inspector. `VoiceMember` discovers the session in the scene tree and registers the local player as **listener** and remote players as **speakers**.
-
-### 3. Start voice
-
-Call `start()` when your game already has connected peers and Steam IDs (after your lobby / multiplayer setup):
-
 ```gdscript
-@onready var session: VoiceSession = $VoiceSession
+@onready var lobby_runtime: VoiceRuntime = $LobbyRuntime
+@onready var game_runtime: VoiceRuntime = $GameRuntime
 
-func _when_voice_should_start() -> void:
-    session.start()
-
-func _exit_tree() -> void:
-    if session.is_active:
-        session.stop()
+func enter_lobby(ids: Array[int]) -> void:
+    game_runtime.stop()
+    lobby_runtime.set_peers(ids)
+    lobby_runtime.start()
 ```
 
-### One channel by default
+Low-level `VoiceSession` + `VoiceChannel` remain available — see [Getting started](getting-started.md).
+
+### 3. One channel by default
 
 Proximity, walkie PTT, and wall muffling are **local playback rules** on **one** P2P stream. Turn on walkie in the Proximity channel Inspector (`use_walkie`, `push_to_talk_action`, `effects_bus_name`) — do **not** add a second channel for walkie + proximity.
 
 | Topic | Read more |
 |-------|-----------|
-| Install, presets, Inspector groups | [Getting started](getting-started.md) |
+| Install, VoiceRuntime, presets | [Getting started](getting-started.md) |
 | VoiceMember, lifecycle, manual registration | [Integration](integration.md) |
 | Common setups | [Recipes](recipes.md) |
 | Demo scenes | [Demo](demo.md) |

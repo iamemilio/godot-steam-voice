@@ -8,9 +8,52 @@
 2. Install [GodotSteam](https://godotsteam.com/) in your project if you have not already.
 3. Enable GodotSteam and confirm voice capture works in your environment.
 
-## Scene setup
+## Scene setup (recommended: VoiceRuntime)
 
-One session node, one channel child, one `VoiceMember` per player:
+Pre-declare one or more **`VoiceRuntime`** nodes and tune them in the Inspector. Call `start()` / `stop()` from code — no config args at the call site.
+
+```
+Main
+├── LobbyRuntime          VoiceRuntime  (config: EPHEMERAL_CLUSTER, huge far_silent_m)
+├── GameRuntime           VoiceRuntime  (config: MEMBERS, near/far meters)
+└── Player
+    ├── Head              Node3D
+    └── VoiceMember       head_path = ../Head (default)
+```
+
+On each `VoiceRuntime` in the Inspector:
+
+- **`config`** (`VoiceContextConfig`) — binding strategy, proximity ranges, muffling, optional label
+- **`log_level`** — `OFF` / `INFO` / `DEBUG`
+
+Sibling runtimes share one `VoiceSession` (created automatically if missing). Starting one stops the other.
+
+```gdscript
+@onready var lobby_runtime: VoiceRuntime = $LobbyRuntime
+@onready var game_runtime: VoiceRuntime = $GameRuntime
+
+func enter_lobby(steam_ids: Array[int]) -> void:
+    game_runtime.stop()
+    lobby_runtime.set_peers(steam_ids)
+    lobby_runtime.start()
+
+func enter_match(steam_ids: Array[int]) -> void:
+    lobby_runtime.stop()
+    game_runtime.set_peers(steam_ids)
+    game_runtime.start()
+
+func leave_voice() -> void:
+    lobby_runtime.stop()
+    game_runtime.stop()
+```
+
+`VoiceMember` on player heads is required for **MEMBERS** binding (in-game proximity). **EPHEMERAL_CLUSTER** uses runtime-owned anchors (useful for lobby chat before heads exist).
+
+See [Recipes](recipes.md) and [`demo/demo_runtime.tscn`](../demo/demo_runtime.tscn).
+
+## Low-level setup (VoiceSession only)
+
+If you prefer manual control, use one session node, one channel child, one `VoiceMember` per player:
 
 ```
 Main
@@ -25,8 +68,6 @@ Main
 - **`VoiceMember`** — default `head_path` is `../Head` (sibling under the same player root). Change it if your scene hierarchy differs.
 - **`VoiceChannel`** — must be a **direct child** of `VoiceSession`.
 
-## Minimal script
-
 ```gdscript
 @onready var session: VoiceSession = $VoiceSession
 
@@ -38,9 +79,7 @@ func _exit_tree() -> void:
         session.stop()
 ```
 
-Call `start()` after your multiplayer session is up. `VoiceMember` nodes register automatically via deferred `_enter_tree` — no manual `register_listener` / `register_speaker` calls needed for the usual single-channel setup.
-
-Optional: set `VoiceSession.auto_start = true` if `get_session_peers()` is already populated when the session node loads.
+Call `start()` after your multiplayer session is up. Optional: set `VoiceSession.auto_start = true` if `get_session_peers()` is already populated when the session node loads.
 
 ## Presets
 

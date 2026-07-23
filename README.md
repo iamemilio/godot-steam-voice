@@ -2,7 +2,7 @@
 
 Voice chat for Godot 4 + [GodotSteam](https://godotsteam.com/) — proximity, walkie-talkie effects, and wall muffling on **one voice stream** with client-owned playback rules.
 
-**[Documentation](https://iamemilio.github.io/godot-steam-voice/)** · [Demo](demo/demo.tscn) · [Contributing](CONTRIBUTING.md)
+**[Documentation](https://iamemilio.github.io/godot-steam-voice/)** · [Demo](demo/demo.tscn) · [VoiceRuntime demo](demo/demo_runtime.tscn) · [Contributing](CONTRIBUTING.md)
 
 ## Requirements
 
@@ -10,22 +10,29 @@ Voice chat for Godot 4 + [GodotSteam](https://godotsteam.com/) — proximity, wa
 - [GodotSteam](https://godotsteam.com/) 4.19+ (live voice)
 - Steam client (local live testing)
 
-## Quick start
+## Quick start (VoiceRuntime)
+
+Configure voice in the Inspector, then start/stop from code:
 
 ```
 Main
-├── VoiceSession
-│   └── VoiceChannel          preset = Proximity
+├── LobbyRuntime     VoiceRuntime (EPHEMERAL_CLUSTER)
+├── GameRuntime      VoiceRuntime (MEMBERS)
 └── Player
     ├── Head
-    └── VoiceMember           head_path = ../Head
+    └── VoiceMember
 ```
 
 ```gdscript
-session.start()  # when peers and Steam IDs are ready
+lobby_runtime.set_peers(steam_ids)
+lobby_runtime.start()
+# ...
+lobby_runtime.stop()
+game_runtime.set_peers(steam_ids)
+game_runtime.start()
 ```
 
-One channel, one send, one decompress per packet — proximity and walkie are local playback rules, not separate network paths.
+Sibling runtimes share one `VoiceSession`. Low-level `VoiceSession` + `VoiceChannel` remain available for manual setups.
 
 Install: copy `addons/godot-steam-voice/` from a [release](https://github.com/iamemilio/godot-steam-voice/releases) or run `make release`.
 

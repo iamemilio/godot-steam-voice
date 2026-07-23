@@ -1,8 +1,47 @@
 # API reference
 
+## VoiceRuntime
+
+High-level Node. Configure a `VoiceContextConfig` in the Inspector, then `start()` / `stop()` from code. Sibling runtimes under the same parent share one `VoiceSession`; only one may be active.
+
+| Member | Description |
+|--------|-------------|
+| `@export config` | `VoiceContextConfig` blueprint (binding, ranges, muffling) |
+| `@export log_level` | `OFF`, `INFO`, or `DEBUG` |
+| `@export heartbeat_interval_msec` | DEBUG heartbeat period (default 2000) |
+| `start()` | Apply config, start shared session, bind speakers |
+| `stop()` | Full deprovision (session stop, free ephemeral anchors) |
+| `refresh()` | Re-apply peers and binding while active |
+| `set_peers(ids)` | Steam IDs for the voice roster |
+| `get_session()` | Underlying `VoiceSession` (created if needed) |
+| `set_log_level` / `get_log_level` | Runtime logging control |
+| `is_active()` | This runtime owns the live session |
+
+Signals: `started`, `stopped`, `log_message(level, event, detail)`.
+
+Prints use the prefix `[godot-steam-voice]`.
+
+## VoiceContextConfig
+
+Resource assigned to `VoiceRuntime.config`.
+
+| Export | Description |
+|--------|-------------|
+| `label` | Optional name for logs |
+| `channel_preset` | `GLOBAL`, `PROXIMITY`, or `CUSTOM` |
+| `near_full_volume_m` / `far_silent_m` | Proximity ranges |
+| `use_wall_muffling` | Enable wall muffling rule |
+| `binding` | `MEMBERS`, `EPHEMERAL_CLUSTER`, or `MANUAL` |
+
+| Binding | Behavior |
+|---------|----------|
+| `MEMBERS` | `VoiceMember` heads via `refresh_member_bindings()` |
+| `EPHEMERAL_CLUSTER` | Runtime-owned anchors at origin (lobby-style) |
+| `MANUAL` | Game registers listener/speakers on the channel |
+
 ## VoiceSession
 
-Root node. Add `VoiceChannel` children. One send and one decompress per packet unless `allow_separate_comms`.
+Root node. Add `VoiceChannel` children. One send and one decompress per packet unless `allow_separate_comms`. `VoiceRuntime` manages this for you when using the high-level API.
 
 | Member | Description |
 |--------|-------------|
