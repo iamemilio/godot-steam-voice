@@ -1,32 +1,48 @@
 class_name VoiceRuntime
 extends Node
 
-## High-level voice controller. Configure in the Inspector, then start()/stop() from code.
-## Sibling VoiceRuntime nodes under the same parent share one VoiceSession; only one may be active.
+## High-level voice controller.
+##
+## Configure [member config] in the Inspector, then call [method start] /
+## [method stop] from code. Sibling [VoiceRuntime] nodes under the same parent
+## share one [VoiceSession]; only one may be active at a time.
 
+## Emitted after a successful [method start].
 signal started()
+## Emitted after [method stop] when this runtime was active.
 signal stopped()
+## Library log line. Also printed with the [code][godot-steam-voice][/code] prefix.
 signal log_message(level: LogLevel, event: String, detail: String)
 
 enum LogLevel {
+	## No prints or [signal log_message] for routine traffic.
 	OFF,
+	## Start/stop and failures only.
 	INFO,
+	## INFO plus session debug events and a throttled heartbeat.
 	DEBUG,
 }
 
 const LOG_PREFIX := "[godot-steam-voice]"
 const DEFAULT_HEARTBEAT_MSEC := 2000
 
+## Binding and proximity blueprint. New Resource ships game-ready proximity.
 @export var config: VoiceContextConfig
+
+## How much the runtime logs. Prefer OFF in shipping builds.
 @export var log_level: LogLevel = LogLevel.OFF
-@export var heartbeat_interval_msec: int = DEFAULT_HEARTBEAT_MSEC
+
+## DEBUG heartbeat period in milliseconds.
+@export_range(250, 60000, 50, "or_greater", "suffix:ms")
+var heartbeat_interval_msec: int = DEFAULT_HEARTBEAT_MSEC
 
 var _peers: Array[int] = []
 var _active: bool = false
 var _session: VoiceSession
 var _ephemeral_rig: Node3D
 var _ephemeral_listener: Node3D
-var _ephemeral_speakers: Dictionary = {}
+## Single shared anchor for all remote ephemeral speakers (same origin).
+var _ephemeral_speaker_anchor: Node3D
 var _voice_debug_connected: bool = false
 var _debug_last_msec: int = 0
 var _debug_sent_frames: int = 0
@@ -43,11 +59,11 @@ func _process(_delta: float) -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_PREDELETE or what == NOTIFICATION_EXIT_TREE:
-		if _active:
-			stop()
+	if what == NOTIFICATION_EXIT_TREE and _active:
+		stop()
 
 
+## Applies [member config], starts the shared session, and binds speakers.
 func start() -> void:
 	if config == null:
 		_emit_log(LogLevel.INFO, "start_failed", "config is null")
@@ -62,7 +78,7 @@ func start() -> void:
 		_emit_log(LogLevel.INFO, "start_failed", "no VoiceSession")
 		return
 
-	_apply_config_to_channel()
+	_apply_channel_exports()
 	_session.set_session_peers(_peers)
 	_session.debug_logging = log_level == LogLevel.DEBUG
 	_hook_voice_debug()
@@ -74,6 +90,7 @@ func start() -> void:
 		_emit_log(LogLevel.INFO, "start_failed", "VoiceSession.start() did not activate")
 		return
 
+	_apply_proximity_rule_volumes()
 	_apply_binding()
 	_active = true
 	_reset_debug_counters()
@@ -82,12 +99,12 @@ func start() -> void:
 	_emit_log(LogLevel.INFO, "started", _label_detail())
 
 
+## Stops voice and frees ephemeral anchors. Idempotent.
 func stop() -> void:
-	if not _active and (_session == null or not _session.is_active):
+	if not _active:
 		_teardown_ephemeral()
 		return
 
-	var was_active := _active
 	_teardown_ephemeral()
 	if _session != null:
 		_session.set_session_peers([])
@@ -97,15 +114,16 @@ func stop() -> void:
 	_active = false
 	set_process(false)
 	_reset_debug_counters()
-	if was_active:
-		stopped.emit()
-		_emit_log(LogLevel.INFO, "stopped", _label_detail())
+	stopped.emit()
+	_emit_log(LogLevel.INFO, "stopped", _label_detail())
 
 
+## True when this runtime owns the live shared session.
 func is_active() -> bool:
 	return _active and _session != null and _session.is_active
 
 
+## Re-applies peers and binding while active (e.g. after a peer joins).
 func refresh() -> void:
 	if not is_active():
 		return
@@ -114,6 +132,7 @@ func refresh() -> void:
 	_emit_log(LogLevel.DEBUG, "refreshed", "peers=%s" % str(_peers))
 
 
+## Sets the Steam ID roster used for send targets and ephemeral speaker binds.
 func set_peers(steam_ids: Array[int]) -> void:
 	_peers = steam_ids.duplicate()
 	if is_active():
@@ -121,10 +140,12 @@ func set_peers(steam_ids: Array[int]) -> void:
 		_apply_binding()
 
 
+## Returns the shared [VoiceSession], creating it under the parent if needed.
 func get_session() -> VoiceSession:
 	return _ensure_session()
 
 
+## Updates [member log_level] and session debug forwarding.
 func set_log_level(level: LogLevel) -> void:
 	log_level = level
 	if _session != null:
@@ -169,6 +190,7 @@ func _ensure_session() -> VoiceSession:
 	_ensure_channel(_session)
 	return _session
 
+
 func _ensure_channel(session: VoiceSession) -> VoiceChannel:
 	for child in session.get_children():
 		if child is VoiceChannel:
@@ -176,12 +198,11 @@ func _ensure_channel(session: VoiceSession) -> VoiceChannel:
 	var channel := VoiceChannel.new()
 	channel.name = "Voice"
 	channel.channel_name = "Voice"
-	channel.preset = VoiceChannel.Preset.PROXIMITY
 	session.add_child(channel)
 	return channel
 
 
-func _apply_config_to_channel() -> void:
+func _apply_channel_exports() -> void:
 	var channel := _ensure_channel(_session)
 	if channel == null or config == null:
 		return
@@ -196,16 +217,14 @@ func _apply_config_to_channel() -> void:
 		channel.preset = VoiceChannel.Preset.GLOBAL
 		channel.use_wall_muffling = false
 
-	# Rebuild rules now so volume knobs apply before/without relying on start order.
-	channel.notify_registered()
 
-	if config.is_proximity_active():
-		_apply_proximity_rule_volumes(channel, config.proximity.configuration)
-
-
-func _apply_proximity_rule_volumes(
-	channel: VoiceChannel, prox_cfg: ProximityConfiguration
-) -> void:
+func _apply_proximity_rule_volumes() -> void:
+	if config == null or not config.is_proximity_active() or _session == null:
+		return
+	var channel := _session.get_primary_channel()
+	if channel == null:
+		return
+	var prox_cfg: ProximityConfiguration = config.proximity.configuration
 	var rule := channel.get_rule_by_class_name(&"ProximityVolume") as ProximityVolume
 	if rule == null:
 		return
@@ -213,7 +232,6 @@ func _apply_proximity_rule_volumes(
 	rule.silent_m = prox_cfg.max_range_m
 	rule.min_volume_db = prox_cfg.min_volume_db
 	rule.max_volume_db = prox_cfg.max_volume_db
-	# Decay: only LINEAR_DB is implemented; enum reserved for future curves.
 
 
 func _apply_binding() -> void:
@@ -234,26 +252,17 @@ func _apply_binding() -> void:
 func _bind_ephemeral_cluster() -> void:
 	_ensure_ephemeral_rig()
 	var channel := _session.get_primary_channel()
-	if channel == null or _ephemeral_listener == null:
+	if channel == null or _ephemeral_listener == null or _ephemeral_speaker_anchor == null:
 		return
 	channel.clear_speakers()
 	channel.register_listener(_ephemeral_listener)
-	var keep: Dictionary = {}
 	var local_id := _session.local_steam_id
 	for steam_id in _peers:
 		var id := int(steam_id)
 		if id == 0 or id == local_id:
 			continue
-		var speaker := _get_or_create_ephemeral_speaker(id)
-		channel.register_speaker(id, speaker)
-		keep[id] = true
-	for existing_id in _ephemeral_speakers.keys():
-		if keep.has(int(existing_id)):
-			continue
-		var node: Node = _ephemeral_speakers[existing_id]
-		_ephemeral_speakers.erase(existing_id)
-		if node != null and is_instance_valid(node):
-			node.queue_free()
+		# All remotes share one origin anchor — avoids N duplicate Node3Ds.
+		channel.register_speaker(id, _ephemeral_speaker_anchor)
 
 
 func _ensure_ephemeral_rig() -> void:
@@ -265,24 +274,15 @@ func _ensure_ephemeral_rig() -> void:
 	_ephemeral_listener = Node3D.new()
 	_ephemeral_listener.name = "EphemeralListener"
 	_ephemeral_rig.add_child(_ephemeral_listener)
-
-
-func _get_or_create_ephemeral_speaker(steam_id: int) -> Node3D:
-	if _ephemeral_speakers.has(steam_id):
-		var existing: Node3D = _ephemeral_speakers[steam_id]
-		if existing != null and is_instance_valid(existing):
-			return existing
-	var speaker := Node3D.new()
-	speaker.name = "EphemeralSpeaker_%d" % steam_id
-	speaker.position = Vector3.ZERO
-	_ephemeral_rig.add_child(speaker)
-	_ephemeral_speakers[steam_id] = speaker
-	return speaker
+	_ephemeral_speaker_anchor = Node3D.new()
+	_ephemeral_speaker_anchor.name = "EphemeralSpeakers"
+	_ephemeral_speaker_anchor.position = Vector3.ZERO
+	_ephemeral_rig.add_child(_ephemeral_speaker_anchor)
 
 
 func _teardown_ephemeral() -> void:
-	_ephemeral_speakers.clear()
 	_ephemeral_listener = null
+	_ephemeral_speaker_anchor = null
 	if _ephemeral_rig != null and is_instance_valid(_ephemeral_rig):
 		_ephemeral_rig.queue_free()
 	_ephemeral_rig = null
@@ -366,8 +366,6 @@ func _emit_log(level: LogLevel, event: String, detail: String) -> void:
 	if log_level == LogLevel.OFF:
 		return
 	if level == LogLevel.DEBUG and log_level != LogLevel.DEBUG:
-		return
-	if level == LogLevel.INFO and log_level == LogLevel.OFF:
 		return
 	log_message.emit(level, event, detail)
 	if detail.is_empty():

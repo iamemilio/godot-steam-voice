@@ -1,4 +1,4 @@
-# GdUnit4 suite: VoiceRuntime start/stop, sibling switch, ephemeral binds, log levels.
+# GdUnit4 suite: VoiceRuntime start/stop, proximity defaults, ephemeral sharing.
 extends GdUnitTestSuite
 
 
@@ -18,7 +18,6 @@ func _make_game_config(
 	var cfg := VoiceContextConfig.new()
 	cfg.label = &"game"
 	cfg.binding = VoiceContextConfig.Binding.MEMBERS
-	# VoiceContextConfig.proximity already defaults to enabled game-ready chat.
 	cfg.proximity.configuration.full_volume_buffer_radius_m = buffer_m
 	cfg.proximity.configuration.max_range_m = max_range_m
 	return cfg
@@ -31,6 +30,54 @@ func test_default_proximity_configuration_is_game_ready() -> void:
 	assert_float(cfg.proximity.configuration.max_range_m).is_equal(40.0)
 	assert_float(cfg.proximity.configuration.max_volume_db).is_equal(0.0)
 	assert_float(cfg.proximity.configuration.min_volume_db).is_equal(-40.0)
+
+
+func test_proximity_disabled_uses_global_preset() -> void:
+	OS.set_environment("STEAM_PROXIMITY_VOICE_TEST", "1")
+	var host := Node.new()
+	auto_free(host)
+	add_child(host)
+
+	var runtime := VoiceRuntime.new()
+	runtime.config = _make_lobby_config()
+	host.add_child(runtime)
+	await await_idle_frame()
+
+	runtime.set_peers([100, 200] as Array[int])
+	runtime.start()
+	assert_int(runtime.get_session().get_primary_channel().preset).is_equal(
+		VoiceChannel.Preset.GLOBAL
+	)
+	runtime.stop()
+
+
+func test_ephemeral_speakers_share_one_anchor() -> void:
+	OS.set_environment("STEAM_PROXIMITY_VOICE_TEST", "1")
+	var host := Node.new()
+	auto_free(host)
+	add_child(host)
+
+	var runtime := VoiceRuntime.new()
+	runtime.config = _make_lobby_config()
+	host.add_child(runtime)
+	await await_idle_frame()
+
+	runtime.set_peers([100, 200, 300] as Array[int])
+	runtime.start()
+	var channel := runtime.get_session().get_primary_channel()
+	var ids := channel.get_registered_speaker_ids()
+	assert_int(ids.size()).is_equal(3)
+	var shared: Node3D = channel.get_speaker_node(ids[0])
+	assert_object(shared).is_not_null()
+	for id in ids:
+		assert_object(channel.get_speaker_node(id)).is_same(shared)
+	# Rig: listener + one shared speaker anchor (not one node per peer).
+	var rig: Node = runtime.get_node_or_null("EphemeralVoiceRig")
+	assert_object(rig).is_not_null()
+	assert_int(rig.get_child_count()).is_equal(2)
+	runtime.stop()
+	await await_idle_frame()
+	assert_object(runtime.get_node_or_null("EphemeralVoiceRig")).is_null()
 
 
 func test_start_stop_deprovisions_ephemeral() -> void:
@@ -50,11 +97,8 @@ func test_start_stop_deprovisions_ephemeral() -> void:
 	runtime.start()
 	assert_bool(runtime.is_active()).is_true()
 	var session := runtime.get_session()
-	assert_object(session).is_not_null()
 	assert_bool(session.is_active).is_true()
 	var channel := session.get_primary_channel()
-	assert_object(channel).is_not_null()
-	assert_int(channel.preset).is_equal(VoiceChannel.Preset.GLOBAL)
 	assert_object(channel.get_listener_node()).is_not_null()
 	assert_int(channel.get_registered_speaker_ids().size()).is_equal(3)
 
@@ -89,6 +133,8 @@ func test_starting_sibling_stops_previous() -> void:
 	game.start()
 	assert_bool(game.is_active()).is_true()
 	assert_bool(lobby.is_active()).is_false()
+	await await_idle_frame()
+	assert_object(lobby.get_node_or_null("EphemeralVoiceRig")).is_null()
 
 	var session := game.get_session()
 	assert_object(session).is_same(lobby.get_session())
@@ -156,7 +202,7 @@ func test_log_level_info_emits_lifecycle() -> void:
 	assert_bool(events.has("stopped")).is_true()
 
 
-func test_members_binding_applies_channel_ranges() -> void:
+func test_members_binding_applies_volume_knobs_to_rule() -> void:
 	OS.set_environment("STEAM_PROXIMITY_VOICE_TEST", "1")
 	var host := Node.new()
 	auto_free(host)
@@ -164,6 +210,8 @@ func test_members_binding_applies_channel_ranges() -> void:
 
 	var runtime := VoiceRuntime.new()
 	runtime.config = _make_game_config(8.0, 40.0)
+	runtime.config.proximity.configuration.max_volume_db = -3.0
+	runtime.config.proximity.configuration.min_volume_db = -50.0
 	host.add_child(runtime)
 	await await_idle_frame()
 
@@ -175,6 +223,17 @@ func test_members_binding_applies_channel_ranges() -> void:
 	assert_float(channel.far_silent_m).is_equal(40.0)
 	var rule := channel.get_rule_by_class_name(&"ProximityVolume") as ProximityVolume
 	assert_object(rule).is_not_null()
-	assert_float(rule.min_volume_db).is_equal(-40.0)
-	assert_float(rule.max_volume_db).is_equal(0.0)
+	assert_float(rule.min_volume_db).is_equal(-50.0)
+	assert_float(rule.max_volume_db).is_equal(-3.0)
 	runtime.stop()
+
+
+func test_distance_gain_respects_max_volume_db() -> void:
+	var near := ProximityVolumeMath.distance_gain(
+		Vector3.ZERO, Vector3(1, 0, 0), 8.0, 40.0, -40.0, -6.0
+	)
+	assert_float(near).is_equal_approx(db_to_linear(-6.0), 0.0001)
+	var far := ProximityVolumeMath.distance_gain(
+		Vector3.ZERO, Vector3(40, 0, 0), 8.0, 40.0, -40.0, -6.0
+	)
+	assert_float(far).is_equal_approx(db_to_linear(-40.0), 0.0001)
