@@ -6,6 +6,7 @@ extends VoiceRule
 @export var full_volume_m: float = 3.0
 @export var silent_m: float = 25.0
 @export var min_volume_db: float = -40.0
+@export var max_volume_db: float = 0.0
 
 
 func filter_recipients(ctx: VoiceSendContext) -> void:
@@ -36,6 +37,7 @@ func process_playback_gain(ctx: VoicePlaybackContext) -> void:
 		ctx.speaker_position,
 		full_volume_m,
 		silent_m,
-		min_volume_db
+		min_volume_db,
+		max_volume_db
 	)
 	ctx.gain_multiplier *= gain

@@ -1,6 +1,39 @@
 # Recipes
 
-Assumes addon at `addons/godot-steam-voice/`, one `VoiceSession`, and `VoiceMember` on each player (`head_path` → head `Node3D`).
+Assumes addon at `addons/godot-steam-voice/`. Prefer **`VoiceRuntime`** nodes for lobby vs match setups; use raw `VoiceSession` when you need full manual control.
+
+## Lobby chat + in-game proximity (VoiceRuntime)
+
+```
+VoiceHost
+├── LobbyRuntime     binding = EPHEMERAL_CLUSTER, proximity.enabled = false
+└── GameRuntime      binding = MEMBERS, proximity enabled with defaults (8m / 40m)
+```
+
+`VoiceContextConfig.new()` already includes game-ready proximity. For lobby, only flip `proximity.enabled = false`.
+
+```gdscript
+lobby_runtime.set_peers(ids)
+lobby_runtime.start()
+# ...
+lobby_runtime.stop()
+game_runtime.set_peers(ids)
+game_runtime.start()
+```
+
+Players need `VoiceMember` on heads for `GameRuntime`. Lobby uses ephemeral anchors — no heads required.
+
+## Debug logging
+
+Set `log_level` on the runtime (Inspector or `set_log_level`):
+
+| Level | Behavior |
+|-------|----------|
+| `OFF` | Quiet |
+| `INFO` | start/stop lifecycle |
+| `DEBUG` | INFO + session `voice_debug` + throttled heartbeat |
+
+Connect `log_message` to route into your own logger, or rely on `[godot-steam-voice]` prints.
 
 ## Global open mic
 

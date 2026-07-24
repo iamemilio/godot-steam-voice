@@ -1,8 +1,69 @@
 # API reference
 
+## VoiceRuntime
+
+High-level Node. Configure a `VoiceContextConfig` in the Inspector, then `start()` / `stop()` from code. Sibling runtimes under the same parent share one `VoiceSession`; only one may be active.
+
+| Member | Description |
+|--------|-------------|
+| `@export config` | `VoiceContextConfig` blueprint (binding + proximity) |
+| `@export log_level` | `OFF`, `INFO`, or `DEBUG` |
+| `@export heartbeat_interval_msec` | DEBUG heartbeat period (default 2000) |
+| `start()` | Apply config, start shared session, bind speakers |
+| `stop()` | Full deprovision (session stop, free ephemeral anchors) |
+| `refresh()` | Re-apply peers and binding while active |
+| `set_peers(ids)` | Steam IDs for the voice roster |
+| `get_session()` | Underlying `VoiceSession` (created if needed) |
+| `set_log_level` / `get_log_level` | Runtime logging control |
+| `is_active()` | This runtime owns the live session |
+
+Signals: `started`, `stopped`, `log_message(level, event, detail)`.
+
+Prints use the prefix `[godot-steam-voice]`.
+
+## VoiceContextConfig
+
+Resource assigned to `VoiceRuntime.config`. **New Resource** ships game-ready proximity defaults (8m buffer / 40m range).
+
+| Export | Description |
+|--------|-------------|
+| `label` | Optional name for logs |
+| `binding` | `MEMBERS`, `EPHEMERAL_CLUSTER`, or `MANUAL` |
+| `proximity` | `ProximitySettings` (nested; see below) |
+
+| Binding | Behavior |
+|---------|----------|
+| `MEMBERS` | `VoiceMember` heads via `refresh_member_bindings()` |
+| `EPHEMERAL_CLUSTER` | Runtime-owned anchors at origin (lobby-style) |
+| `MANUAL` | Game registers listener/speakers on the channel |
+
+## ProximitySettings / ProximityConfiguration
+
+```
+proximity
+├── enabled              default true
+└── configuration        default game-ready values
+    ├── max_volume_db
+    ├── min_volume_db
+    ├── full_volume_buffer_radius_m
+    ├── max_range_m
+    ├── decay            LINEAR_DB
+    └── use_wall_muffling
+```
+
+| Default | Value |
+|---------|-------|
+| `enabled` | `true` |
+| `full_volume_buffer_radius_m` | `8` |
+| `max_range_m` | `40` |
+| `max_volume_db` | `0` |
+| `min_volume_db` | `-40` |
+
+Set `proximity.enabled = false` for lobby open mic (no distance fade). Inside the buffer radius volume stays at max; between buffer and max range it decays toward min; past max range peers are not sent to.
+
 ## VoiceSession
 
-Root node. Add `VoiceChannel` children. One send and one decompress per packet unless `allow_separate_comms`.
+Root node. Add `VoiceChannel` children. One send and one decompress per packet unless `allow_separate_comms`. `VoiceRuntime` manages this for you when using the high-level API.
 
 | Member | Description |
 |--------|-------------|
