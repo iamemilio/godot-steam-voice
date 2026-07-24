@@ -6,8 +6,8 @@ Demo scenes live in this dev repo at `demo/`. They are **not** included in the p
 
 Two Inspector-configured `VoiceRuntime` nodes:
 
-- **LobbyRuntime** — `EPHEMERAL_CLUSTER`, huge `far_silent_m`
-- **GameRuntime** — `MEMBERS`, 8m / 40m proximity
+- **LobbyRuntime** — `EPHEMERAL_CLUSTER`, `proximity.enabled = false` (open mic)
+- **GameRuntime** — `MEMBERS`, default proximity (8m buffer / 40m range)
 
 Keys: `1` lobby, `2` game, `0` stop, `L` cycle log level.
 

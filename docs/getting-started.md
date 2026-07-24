@@ -14,8 +14,8 @@ Pre-declare one or more **`VoiceRuntime`** nodes and tune them in the Inspector.
 
 ```
 Main
-├── LobbyRuntime          VoiceRuntime  (config: EPHEMERAL_CLUSTER, huge far_silent_m)
-├── GameRuntime           VoiceRuntime  (config: MEMBERS, near/far meters)
+├── LobbyRuntime          VoiceRuntime  (EPHEMERAL_CLUSTER, proximity off)
+├── GameRuntime           VoiceRuntime  (MEMBERS, proximity defaults)
 └── Player
     ├── Head              Node3D
     └── VoiceMember       head_path = ../Head (default)
@@ -23,7 +23,7 @@ Main
 
 On each `VoiceRuntime` in the Inspector:
 
-- **`config`** (`VoiceContextConfig`) — binding strategy, proximity ranges, muffling, optional label
+- **`config`** (`VoiceContextConfig`) — New Resource ships **game-ready proximity** (8m buffer / 40m range, min −40 dB). For lobby, set `proximity.enabled = false`.
 - **`log_level`** — `OFF` / `INFO` / `DEBUG`
 
 Sibling runtimes share one `VoiceSession` (created automatically if missing). Starting one stops the other.

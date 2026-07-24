@@ -185,13 +185,35 @@ func _apply_config_to_channel() -> void:
 	var channel := _ensure_channel(_session)
 	if channel == null or config == null:
 		return
-	channel.preset = config.channel_preset
-	channel.near_full_volume_m = config.near_full_volume_m
-	channel.far_silent_m = config.far_silent_m
-	channel.use_wall_muffling = config.use_wall_muffling
-	# VoiceSession.start() calls notify_registered(); refresh live rules if already active.
-	if _session.is_active:
-		channel.notify_registered()
+
+	if config.is_proximity_active():
+		var prox_cfg: ProximityConfiguration = config.proximity.configuration
+		channel.preset = VoiceChannel.Preset.PROXIMITY
+		channel.near_full_volume_m = prox_cfg.full_volume_buffer_radius_m
+		channel.far_silent_m = prox_cfg.max_range_m
+		channel.use_wall_muffling = prox_cfg.use_wall_muffling
+	else:
+		channel.preset = VoiceChannel.Preset.GLOBAL
+		channel.use_wall_muffling = false
+
+	# Rebuild rules now so volume knobs apply before/without relying on start order.
+	channel.notify_registered()
+
+	if config.is_proximity_active():
+		_apply_proximity_rule_volumes(channel, config.proximity.configuration)
+
+
+func _apply_proximity_rule_volumes(
+	channel: VoiceChannel, prox_cfg: ProximityConfiguration
+) -> void:
+	var rule := channel.get_rule_by_class_name(&"ProximityVolume") as ProximityVolume
+	if rule == null:
+		return
+	rule.full_volume_m = prox_cfg.full_volume_buffer_radius_m
+	rule.silent_m = prox_cfg.max_range_m
+	rule.min_volume_db = prox_cfg.min_volume_db
+	rule.max_volume_db = prox_cfg.max_volume_db
+	# Decay: only LINEAR_DB is implemented; enum reserved for future curves.
 
 
 func _apply_binding() -> void:

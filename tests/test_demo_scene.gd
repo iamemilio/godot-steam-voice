@@ -34,4 +34,8 @@ func test_demo_runtime_has_lobby_and_game_runtimes() -> void:
 	assert_object(lobby.config).is_not_null()
 	assert_object(game.config).is_not_null()
 	assert_int(lobby.config.binding).is_equal(VoiceContextConfig.Binding.EPHEMERAL_CLUSTER)
+	assert_bool(lobby.config.is_proximity_active()).is_false()
 	assert_int(game.config.binding).is_equal(VoiceContextConfig.Binding.MEMBERS)
+	assert_bool(game.config.is_proximity_active()).is_true()
+	assert_float(game.config.proximity.configuration.full_volume_buffer_radius_m).is_equal(8.0)
+	assert_float(game.config.proximity.configuration.max_range_m).is_equal(40.0)

@@ -6,9 +6,11 @@ Assumes addon at `addons/godot-steam-voice/`. Prefer **`VoiceRuntime`** nodes fo
 
 ```
 VoiceHost
-├── LobbyRuntime     binding = EPHEMERAL_CLUSTER, far_silent_m = 10000
-└── GameRuntime      binding = MEMBERS, near = 8, far = 40
+├── LobbyRuntime     binding = EPHEMERAL_CLUSTER, proximity.enabled = false
+└── GameRuntime      binding = MEMBERS, proximity enabled with defaults (8m / 40m)
 ```
+
+`VoiceContextConfig.new()` already includes game-ready proximity. For lobby, only flip `proximity.enabled = false`.
 
 ```gdscript
 lobby_runtime.set_peers(ids)

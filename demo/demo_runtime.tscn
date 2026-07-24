@@ -1,29 +1,45 @@
-[gd_scene load_steps=6 format=3 uid="uid://steamvoice_demo_runtime"]
+[gd_scene load_steps=8 format=3 uid="uid://steamvoice_demo_runtime"]
 
 [ext_resource type="Script" path="res://voice_runtime.gd" id="1_runtime"]
 [ext_resource type="Script" path="res://voice_context_config.gd" id="2_config"]
-[ext_resource type="Script" path="res://demo/demo_runtime.gd" id="3_demo"]
+[ext_resource type="Script" path="res://proximity_settings.gd" id="3_prox"]
+[ext_resource type="Script" path="res://proximity_configuration.gd" id="4_proxcfg"]
+[ext_resource type="Script" path="res://demo/demo_runtime.gd" id="5_demo"]
+
+[sub_resource type="Resource" id="LobbyProxCfg"]
+script = ExtResource("4_proxcfg")
+
+[sub_resource type="Resource" id="LobbyProx"]
+script = ExtResource("3_prox")
+enabled = false
+configuration = SubResource("LobbyProxCfg")
 
 [sub_resource type="Resource" id="LobbyConfig"]
 script = ExtResource("2_config")
 label = &"lobby"
-channel_preset = 1
-near_full_volume_m = 0.0
-far_silent_m = 10000.0
-use_wall_muffling = false
 binding = 1
+proximity = SubResource("LobbyProx")
+
+[sub_resource type="Resource" id="GameProxCfg"]
+script = ExtResource("4_proxcfg")
+max_volume_db = 0.0
+min_volume_db = -40.0
+full_volume_buffer_radius_m = 8.0
+max_range_m = 40.0
+
+[sub_resource type="Resource" id="GameProx"]
+script = ExtResource("3_prox")
+enabled = true
+configuration = SubResource("GameProxCfg")
 
 [sub_resource type="Resource" id="GameConfig"]
 script = ExtResource("2_config")
 label = &"game"
-channel_preset = 1
-near_full_volume_m = 8.0
-far_silent_m = 40.0
-use_wall_muffling = false
 binding = 0
+proximity = SubResource("GameProx")
 
 [node name="SteamVoiceRuntimeDemo" type="Node3D"]
-script = ExtResource("3_demo")
+script = ExtResource("5_demo")
 
 [node name="LobbyRuntime" type="Node" parent="."]
 script = ExtResource("1_runtime")
